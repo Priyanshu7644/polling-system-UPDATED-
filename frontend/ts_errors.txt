@@ -1,0 +1,4 @@
+﻿src/api.ts(4,24): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/pages/Home.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/PollDetail.tsx(7,10): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/pages/PollDetail.tsx(28,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
