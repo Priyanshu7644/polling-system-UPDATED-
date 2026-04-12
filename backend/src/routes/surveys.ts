@@ -1,5 +1,5 @@
 import express, { Response } from 'express';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { authMiddleware, verifiedMiddleware, AuthRequest } from '../middleware/auth';
 import { Survey } from '../models/Survey';
 import { SurveyResponse } from '../models/SurveyResponse';
 import mongoose from 'mongoose';
@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 const router = express.Router();
 
 // Create Survey
-router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/', authMiddleware, verifiedMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { title, description, questions, isAnonymous } = req.body;
     
@@ -116,6 +116,30 @@ router.get('/:id/results', authMiddleware, async (req: AuthRequest, res: Respons
     res.json({ survey, responses });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch results' });
+  }
+});
+
+// Delete Survey
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const surveyId = req.params.id;
+    const userId = req.user?.userId;
+
+    const survey = await Survey.findById(surveyId);
+    if (!survey) {
+      return res.status(404).json({ error: 'Survey not found' });
+    }
+
+    if (survey.creator.toString() !== userId) {
+      return res.status(403).json({ error: 'Unauthorized to delete this survey' });
+    }
+
+    await Survey.findByIdAndDelete(surveyId);
+    await SurveyResponse.deleteMany({ survey: surveyId });
+
+    res.json({ message: 'Survey deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete survey' });
   }
 });
 

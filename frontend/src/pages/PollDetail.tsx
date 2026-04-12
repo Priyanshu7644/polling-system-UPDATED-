@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api';
 import { AuthContext } from '../App';
-import { MessageSquare, Send, Edit2, X, Check, ThumbsUp, Trash2, Reply, BarChart3, Share2 } from 'lucide-react';
+import { MessageSquare, Send, Edit2, X, Check, ThumbsUp, Trash2, Reply, BarChart3, Share2, ShieldCheck, Cpu } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import ShareModal from '../components/poll/ShareModal';
@@ -32,6 +32,7 @@ export default function PollDetail() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState('');
+  const [showVoteSuccess, setShowVoteSuccess] = useState(false);
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
@@ -96,11 +97,12 @@ export default function PollDetail() {
       await api.post(`/polls/${id}/vote`, { optionId: selectedOption });
       setHasVoted(true);
       setVotedOptionId(selectedOption);
+      setShowVoteSuccess(true);
       
-      // Redirect to analytics after a short delay for feedback
+      // Redirect to specific poll analytics after a longer delay for animation feedback
       setTimeout(() => {
-        navigate('/analytics');
-      }, 800);
+        navigate(`/poll/${id}/analytics`);
+      }, 2500);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to vote. Have you already voted?');
     }
@@ -165,11 +167,18 @@ export default function PollDetail() {
   };
 
   if (loading) return (
-    <div className="flex justify-center items-center min-h-[60vh]">
-      <div className="relative w-20 h-20">
-        <div className="absolute inset-0 rounded-full border-t-2 border-neon-purple animate-spin"></div>
-        <div className="absolute inset-2 rounded-full border-r-2 border-cyber-500 animate-spin animation-delay-200"></div>
+    <div className="flex flex-col justify-center items-center min-h-[60vh] space-y-6">
+      <div className="w-48 h-48 relative flex items-center justify-center">
+         <div className="absolute inset-0 bg-cyber-500/20 blur-[40px] rounded-full animate-pulse"></div>
+         <motion.div
+           animate={{ rotate: 360 }}
+           transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+           className="relative z-10"
+         >
+           <Cpu className="w-16 h-16 text-cyber-500" />
+         </motion.div>
       </div>
+      <p className="text-[10px] font-black text-cyber-500 uppercase tracking-[0.5em] animate-pulse">Synchronizing Neural Data...</p>
     </div>
   );
   
@@ -316,8 +325,40 @@ export default function PollDetail() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 py-8 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
+    <div className="max-w-5xl mx-auto space-y-8 py-8 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0 relative">
       
+      {/* Vote Success Overlay */}
+      <AnimatePresence>
+        {showVoteSuccess && (
+          <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl"
+          >
+             <div className="text-center">
+                <div className="w-64 h-64 mx-auto mb-8 relative flex items-center justify-center">
+                   <motion.div 
+                     initial={{ scale: 0 }}
+                     animate={{ scale: [0, 1.5, 1] }}
+                     className="absolute inset-0 bg-white/10 blur-[80px] rounded-full"
+                   />
+                   <motion.div
+                     initial={{ scale: 0, rotate: -45 }}
+                     animate={{ scale: 1, rotate: 0 }}
+                     transition={{ type: "spring", damping: 10 }}
+                     className="relative z-10"
+                   >
+                     <ShieldCheck className="w-32 h-32 text-white" />
+                   </motion.div>
+                </div>
+                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-2">Vote Decrypted</h2>
+                <p className="text-cyber-400 font-bold text-[10px] uppercase tracking-[0.4em]">Neural Link Established</p>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Left Column: Poll Voting */}
       <div className="lg:col-span-2">
         <motion.div 

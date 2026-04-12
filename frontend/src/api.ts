@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+// Dynamically use the host IP so mobile devices on the same network can access it
+const HOSTNAME = window.location.hostname;
+const API_URL = import.meta.env.VITE_API_URL || `http://${HOSTNAME}:5000/api`;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -20,8 +22,10 @@ export const exams = {
   create: (data: any) => api.post('/exams', data),
   getAll: () => api.get('/exams'),
   getById: (id: string) => api.get(`/exams/${id}`),
-  submit: (id: string, answers: number[]) => api.post(`/exams/${id}/submit`, { answers }),
+  submit: (id: string, data: any) => api.post(`/exams/${id}/submit`, data),
   getResults: (id: string) => api.get(`/exams/${id}/results`),
+  recordProctorLog: (id: string, data: any) => api.post(`/exams/${id}/proctor-logs`, data),
+  getProctorLogs: (id: string) => api.get(`/exams/${id}/proctor-logs`),
 };
 
 export const surveys = {

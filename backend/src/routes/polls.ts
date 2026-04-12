@@ -1,5 +1,5 @@
 import express, { Response } from 'express';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { authMiddleware, verifiedMiddleware, AuthRequest } from '../middleware/auth';
 import { Poll } from '../models/Poll';
 import { Vote } from '../models/Vote';
 import mongoose from 'mongoose';
@@ -8,7 +8,7 @@ import { Server } from 'socket.io';
 const router = express.Router();
 
 // Create Poll
-router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/', authMiddleware, verifiedMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { title, description, options, category, isPublic, expiresAt } = req.body;
     
@@ -223,6 +223,30 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
     res.json(poll);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update poll' });
+  }
+});
+
+// Get Poll Votes (Creator only)
+router.get('/:id/votes', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const pollId = req.params.id;
+    const userId = req.user?.userId;
+
+    const poll = await Poll.findById(pollId);
+    if (!poll) {
+      return res.status(404).json({ error: 'Poll not found' });
+    }
+
+    if (poll.creator.toString() !== userId) {
+      return res.status(403).json({ error: 'Unauthorized to view detailed votes' });
+    }
+
+    const votes = await Vote.find({ poll: pollId })
+      .populate('user', 'username email');
+      
+    res.json(votes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch votes' });
   }
 });
 

@@ -1,0 +1,44 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: polling-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false # You will need to set this securely in the Render Dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        value: "https://polling-frontend.onrender.com"
+      - key: EMAIL_USER
+        sync: false # Set in Render Dashboard
+      - key: EMAIL_PASS
+        sync: false # Set in Render Dashboard
+
+  # Frontend Static Site
+  - type: web
+    name: polling-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NPM_CONFIG_LEGACY_PEER_DEPS
+        value: "true"
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: polling-backend
+          property: host
+        # Since the backend serves the API on /api, we can just append it, but fromService only yields the host.
+        # However, Render's static site does not execute Node at runtime, so VITE_API_URL must be built-in.
+        # Actually it's better to hardcode the expected backend URL or let the user change it.
+        # Render has a way to inject env vars during build.
+        value: "https://polling-backend.onrender.com/api"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

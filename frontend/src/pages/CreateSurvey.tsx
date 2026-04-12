@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -8,10 +8,12 @@ import {
   Type, 
   List, 
   ChevronLeft,
-  Zap,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert,
+  ArrowRight
 } from 'lucide-react';
-import { surveys } from '../api';
+import api, { surveys } from '../api';
+import { AuthContext } from '../App';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -27,6 +29,7 @@ interface SurveyQuestion {
 }
 
 const CreateSurvey: React.FC = () => {
+  const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -36,6 +39,95 @@ const CreateSurvey: React.FC = () => {
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [otp, setOtp] = useState('');
+  const [devOtp, setDevOtp] = useState('');
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/auth/verify-otp', { email: user.email, otp });
+      const updatedUser = { ...user, isVerified: true };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setError('');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Neural link validation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/auth/resend-otp', { email: user.email });
+      setDevOtp(res.data.otp);
+      setError('Fresh synchronization code dispatched.');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Resend sequence interrupted');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user?.isVerified) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card rounded-[3rem] p-12 text-center border border-white/10 shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+          
+          <div className="w-20 h-20 bg-sky-400/10 border border-sky-400/20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(56,189,248,0.1)]">
+            <ShieldAlert className="w-10 h-10 text-sky-400" />
+          </div>
+
+          <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter mb-4 leading-none">Authorization Required</h1>
+          <p className="text-gray-400 font-bold text-xs uppercase tracking-[0.2em] mb-10 opacity-70 leading-relaxed">System protocols restrict discovery cycles to verified identities. Synchronize your neural link to proceed.</p>
+
+          <form onSubmit={handleVerifyOtp} className="space-y-6 max-w-sm mx-auto">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-sky-400 to-cyber-600 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000"></div>
+              <input
+                type="text"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                required
+                className="relative w-full py-6 bg-black border border-white/10 rounded-2xl text-center text-3xl font-black tracking-[0.5em] text-white focus:ring-0 outline-none"
+                placeholder="000000"
+              />
+            </div>
+
+            {error && <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{error}</p>}
+
+            {devOtp && (
+              <div className="bg-white/5 border border-white/5 p-4 rounded-xl text-center backdrop-blur-md">
+                <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest block mb-1">Developer Bypass</span>
+                <span className="text-xl font-black text-white tracking-[0.3em]">{devOtp}</span>
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50"
+            >
+              <span>Validate Identity</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+
+            <button type="button" onClick={handleResendOtp} disabled={loading} className="text-[10px] font-black text-gray-500 uppercase hover:text-white transition-colors tracking-widest block mx-auto">Resend Sync Code</button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
 
   const handleAddQuestion = (type: 'mcq' | 'text') => {
     setQuestions([...questions, { 
@@ -89,7 +181,7 @@ const CreateSurvey: React.FC = () => {
 
     try {
       await surveys.create({ title, description, questions, isAnonymous });
-      navigate('/surveys');
+      navigate('/?tab=surveys');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create survey');
     } finally {
@@ -100,7 +192,7 @@ const CreateSurvey: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 relative">
       <button 
-        onClick={() => navigate('/surveys')}
+        onClick={() => navigate('/?tab=surveys')}
         className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8 group font-bold text-sm tracking-tight"
       >
         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -323,7 +415,7 @@ const CreateSurvey: React.FC = () => {
                 <div className="flex items-center gap-4 w-full md:w-auto">
                   <button
                     type="button"
-                    onClick={() => navigate('/surveys')}
+                    onClick={() => navigate('/?tab=surveys')}
                     className="flex-1 md:flex-none px-10 py-4 text-gray-400 font-black text-sm uppercase tracking-widest hover:text-white transition-colors"
                   >
                     Cancel

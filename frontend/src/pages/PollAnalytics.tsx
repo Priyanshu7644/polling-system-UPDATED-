@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import api from '../api';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, 
@@ -19,6 +20,8 @@ export default function PollAnalytics() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [votes, setVotes] = useState<any[]>([]);
+  const [isCreator, setIsCreator] = useState(false);
 
   useEffect(() => {
     const fetchPollAnalytics = async () => {
@@ -26,6 +29,18 @@ export default function PollAnalytics() {
         setLoading(true);
         const response = await analytics.getPollStats(id!);
         setData(response.data);
+
+        // Check if current user is creator
+        const userStr = localStorage.getItem('user');
+        if (userStr && response.data.poll.creator) {
+          const user = JSON.parse(userStr);
+          const pollCreatorId = response.data.poll.creator._id || response.data.poll.creator;
+          if (pollCreatorId.toString() === user.id || pollCreatorId.toString() === user._id) {
+            setIsCreator(true);
+            const votesRes = await api.get(`/polls/${id}/votes`);
+            setVotes(votesRes.data);
+          }
+        }
       } catch (err: any) {
         console.error('Error fetching poll analytics:', err);
         setError('Failed to load analytics for this poll.');
@@ -205,6 +220,62 @@ export default function PollAnalytics() {
                     <p className="text-[10px] font-black text-cyber-400 uppercase">View All</p>
               </div>
           </motion.div>
+
+          {/* Voter Responses (Creator Only) */}
+          {isCreator && (
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-12 glass-card rounded-[2.5rem] p-10 border border-white/5 relative overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">Voter Responses</h3>
+                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Detailed Consensus Breakdown</p>
+                </div>
+                <div className="p-3 bg-neon-blue/10 rounded-xl text-neon-blue">
+                   <Users className="w-6 h-6" />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                   <thead>
+                      <tr className="border-b border-white/5 text-gray-600 text-[10px] uppercase font-black tracking-widest">
+                         <th className="pb-4 px-4 whitespace-nowrap">Participant</th>
+                         <th className="pb-4 px-4 whitespace-nowrap">Selected Choice</th>
+                         <th className="pb-4 px-4 whitespace-nowrap">Synchronization Time</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-white/5">
+                      {votes.length > 0 ? votes.map((vote, vIdx) => {
+                        const option = data.poll.options.find((o: any) => o._id === vote.optionId);
+                        return (
+                          <tr key={vIdx} className="group hover:bg-white/5 transition-colors">
+                             <td className="py-4 px-4">
+                                <span className="font-bold text-gray-200">{vote.user?.username || 'Redacted'}</span>
+                             </td>
+                             <td className="py-4 px-4">
+                                <span className="px-3 py-1 bg-cyber-500/10 border border-cyber-500/20 rounded-full text-[9px] font-black text-cyber-400 uppercase">
+                                   {option?.text || 'Invalid Selection'}
+                                </span>
+                             </td>
+                             <td className="py-4 px-4 text-[10px] font-black text-gray-500 uppercase">
+                                {new Date(vote.createdAt).toLocaleString()}
+                             </td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr>
+                          <td colSpan={3} className="py-20 text-center text-gray-600 font-bold uppercase tracking-widest text-xs">No responses recorded yet.</td>
+                        </tr>
+                      )}
+                   </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </main>
     </div>

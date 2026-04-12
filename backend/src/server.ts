@@ -11,7 +11,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: '*',
     methods: ['GET', 'POST']
   }
 });
@@ -22,6 +22,7 @@ import commentRoutes from './routes/comments';
 import examRoutes from './routes/exams';
 import surveyRoutes from './routes/surveys';
 import analyticsRoutes from './routes/analytics';
+import userRoutes from './routes/users';
 
 app.use(cors());
 app.use(express.json());
@@ -36,6 +37,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/surveys', surveyRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('Polling API is running...');
@@ -43,13 +45,62 @@ app.get('/', (req, res) => {
 
 // Socket.io connection
 let connectedUsers = 0;
+const deviceCodes = new Map<string, string>(); // Maps 6-digit code to roomId
+
 io.on('connection', (socket) => {
   connectedUsers++;
   io.emit('liveUsers', connectedUsers);
+
+  // --- Proctoring & WebRTC Signaling ---
+  
+  // Join a specific room for an exam session
+  socket.on('join-exam-room', (roomId) => {
+    socket.join(roomId);
+    socket.to(roomId).emit('user-joined', socket.id);
+  });
+
+  // Pairing code logic
+  socket.on('register-device-code', ({ code, roomId }) => {
+    deviceCodes.set(code, roomId);
+  });
+
+  socket.on('join-via-code', ({ code }) => {
+    const roomId = deviceCodes.get(code);
+    if (roomId) {
+       socket.join(roomId);
+       socket.emit('code-accepted', roomId);
+    } else {
+       socket.emit('code-rejected');
+    }
+  });
+
+  // WebRTC Signaling
+  socket.on('webrtc-offer', ({ roomId, offer, senderId, isSecondary }) => {
+    socket.to(roomId).emit('webrtc-offer', { offer, senderId, isSecondary });
+  });
+
+  socket.on('webrtc-answer', ({ roomId, answer, senderId, isSecondary }) => {
+    socket.to(roomId).emit('webrtc-answer', { answer, senderId, isSecondary });
+  });
+
+  socket.on('webrtc-ice-candidate', ({ roomId, candidate, senderId, isSecondary }) => {
+    socket.to(roomId).emit('webrtc-ice-candidate', { candidate, senderId, isSecondary });
+  });
+
+  // Proctoring Events
+  socket.on('proctor-event', (data) => {
+    // data: { roomId, studentId, studentName, eventType, timestamp, details }
+    // Broadcast to the proctors watching the room
+    socket.to(data.roomId).emit('proctor-event-received', data);
+    
+    // In a real app, we'd also save this to MongoDB here or via REST API
+  });
   
   socket.on('disconnect', () => {
     connectedUsers--;
     io.emit('liveUsers', connectedUsers);
+    // Ideally to handle disconnection we'd know which room they were in,
+    // but the client will broadcast its state.
   });
 });
 

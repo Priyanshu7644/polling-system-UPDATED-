@@ -97,7 +97,8 @@ router.get('/poll/:id', authMiddleware, async (req, res) => {
     res.json({
       poll: {
         title: poll.title,
-        options: poll.options
+        options: poll.options,
+        creator: poll.creator
       },
       engagement: {
         votes: votes.map(v => ({ date: v._id, count: v.count })),
