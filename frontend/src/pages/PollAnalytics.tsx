@@ -34,7 +34,7 @@ export default function PollAnalytics() {
         const userStr = localStorage.getItem('user');
         if (userStr && response.data.poll.creator) {
           const user = JSON.parse(userStr);
-          const pollCreatorId = response.data.poll.creator._id || response.data.poll.creator;
+          const pollCreatorId = response.data.poll.creator?._id || response.data.poll.creator;
           if (pollCreatorId.toString() === user.id || pollCreatorId.toString() === user._id) {
             setIsCreator(true);
             const votesRes = await api.get(`/polls/${id}/votes`);

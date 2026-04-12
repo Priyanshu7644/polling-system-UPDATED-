@@ -204,7 +204,7 @@ export default function PollDetail() {
               {comment.user.username.charAt(0).toUpperCase()}
             </div>
             <span className="font-bold text-sm text-gray-200">{comment.user.username}</span>
-            {poll.creator._id === comment.user._id && (
+            {poll.creator?._id === comment.user._id && (
               <span className="text-[10px] font-black tracking-wider text-neon-pink bg-neon-pink/10 px-1.5 py-0.5 rounded-full uppercase">Creator</span>
             )}
             <span className="text-[10px] text-gray-500 ml-auto flex items-center gap-1">
@@ -461,7 +461,7 @@ export default function PollDetail() {
                     <Share2 className="w-4 h-4" /> Share
                   </button>
                   
-                  {user && user.id === poll.creator._id && (
+                  {user && poll.creator && user.id === poll.creator._id && (
                     <div className="ml-auto flex items-center space-x-3">
                       {!isEditing && (
                         <button 
