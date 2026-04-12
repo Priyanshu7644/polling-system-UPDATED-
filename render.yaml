@@ -29,14 +29,6 @@ services:
       - key: NPM_CONFIG_LEGACY_PEER_DEPS
         value: "true"
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: polling-backend
-          property: host
-        # Since the backend serves the API on /api, we can just append it, but fromService only yields the host.
-        # However, Render's static site does not execute Node at runtime, so VITE_API_URL must be built-in.
-        # Actually it's better to hardcode the expected backend URL or let the user change it.
-        # Render has a way to inject env vars during build.
         value: "https://polling-backend.onrender.com/api"
     routes:
       - type: rewrite
