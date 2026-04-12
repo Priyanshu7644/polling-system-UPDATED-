@@ -30,7 +30,7 @@ services:
       - key: NPM_CONFIG_LEGACY_PEER_DEPS
         value: "true"
       - key: VITE_API_URL
-        value: "https://polling-backend.onrender.com/api"
+        value: "https://polling-backend-pyv1.onrender.com/api"
     routes:
       - type: rewrite
         source: /*
