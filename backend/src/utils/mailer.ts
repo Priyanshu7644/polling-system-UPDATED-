@@ -7,7 +7,10 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER || 'your-email@gmail.com',
     pass: process.env.EMAIL_PASS || 'your-app-password'
-  }
+  },
+  connectionTimeout: 5000, // 5 seconds timeout
+  greetingTimeout: 5000,
+  socketTimeout: 5000
 });
 
 export const sendOTP = async (email: string, otp: string) => {
