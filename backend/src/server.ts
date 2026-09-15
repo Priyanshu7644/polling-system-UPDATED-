@@ -40,7 +40,15 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Polling API is running...');
+  res.status(200).json({ status: 'ok', message: 'Polling API is running...' });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    dbConnected: mongoose.connection.readyState === 1
+  });
 });
 
 // Socket.io connection
@@ -92,28 +100,27 @@ io.on('connection', (socket) => {
     // data: { roomId, studentId, studentName, eventType, timestamp, details }
     // Broadcast to the proctors watching the room
     socket.to(data.roomId).emit('proctor-event-received', data);
-    
-    // In a real app, we'd also save this to MongoDB here or via REST API
   });
   
   socket.on('disconnect', () => {
     connectedUsers--;
     io.emit('liveUsers', connectedUsers);
-    // Ideally to handle disconnection we'd know which room they were in,
-    // but the client will broadcast its state.
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/polling-platform';
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server listening on port ${PORT} (0.0.0.0)`);
+});
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    console.log('Connected to MongoDB');
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+    console.log('✅ Connected to MongoDB successfully');
   })
   .catch((err) => {
-    console.error('MongoDB connection error:', err);
+    console.error('❌ MongoDB connection error:', err.message);
+    console.warn('⚠️ Please ensure MONGODB_URI is configured correctly in Render Dashboard environment variables.');
   });
+
