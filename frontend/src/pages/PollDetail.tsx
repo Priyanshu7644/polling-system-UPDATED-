@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api';
+import api, { SOCKET_URL } from '../api';
 import { AuthContext } from '../App';
 import { MessageSquare, Send, Edit2, X, Check, ThumbsUp, Trash2, Reply, BarChart3, Share2, ShieldCheck, Cpu } from 'lucide-react';
 import clsx from 'clsx';
@@ -36,7 +36,8 @@ export default function PollDetail() {
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    const socket: Socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000');
+    const socket: Socket = io(SOCKET_URL);
+
     
     const fetchData = async () => {
       try {

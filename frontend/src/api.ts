@@ -1,18 +1,34 @@
 import axios from 'axios';
 
-// Dynamically use the host IP so mobile devices on the same network can access it
-const HOSTNAME = window.location.hostname;
-const API_URL = import.meta.env.VITE_API_URL || `http://${HOSTNAME}:5000/api`;
+// Dynamically determine the best API endpoint
+const getApiBaseUrl = () => {
+
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If running on Render (e.g. polling-frontend-dwg2.onrender.com)
+    if (hostname.includes('onrender.com')) {
+      return 'https://polling-backend-pyv1.onrender.com/api';
+    }
+    return `http://${hostname}:5000/api`;
+  }
+  return 'http://localhost:5000/api';
+};
+
+export const API_URL = getApiBaseUrl();
+export const SOCKET_URL = API_URL.replace(/\/api\/?$/, '');
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 15000,
 });
 
 // Non-blocking warmup ping to wake up backend immediately on app load
 if (typeof window !== 'undefined') {
   fetch(`${API_URL}/health`).catch(() => {});
 }
-
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -36,6 +52,7 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 export default api;
 

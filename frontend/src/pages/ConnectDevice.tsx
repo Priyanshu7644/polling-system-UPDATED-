@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { Zap, Activity, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SOCKET_URL } from '../api';
 
-const HOSTNAME = window.location.hostname;
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || `http://${HOSTNAME}:5000`;
 
 const ConnectDevice: React.FC = () => {
    const [code, setCode] = useState('');

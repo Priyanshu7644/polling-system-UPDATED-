@@ -7,6 +7,14 @@ import { Server } from 'socket.io';
 
 const router = express.Router();
 
+// High-performance in-memory cache for instant responses (<1ms)
+const pollsCache = new Map<string, { data: any; expiry: number }>();
+const CACHE_TTL_MS = 30000; // 30 seconds
+
+export const invalidatePollsCache = () => {
+  pollsCache.clear();
+};
+
 // Create Poll
 router.post('/', authMiddleware, verifiedMiddleware, async (req: AuthRequest, res: Response) => {
   try {
@@ -31,6 +39,9 @@ router.post('/', authMiddleware, verifiedMiddleware, async (req: AuthRequest, re
     await poll.save();
     await poll.populate('creator', 'username avatar');
     
+    // Invalidate cache immediately on new poll
+    invalidatePollsCache();
+
     // Broadcast to all clients
     const io: Server = req.app.get('io');
     if (io && poll.isPublic) {
@@ -43,10 +54,17 @@ router.post('/', authMiddleware, verifiedMiddleware, async (req: AuthRequest, re
   }
 });
 
-// Get all public active polls
+// Get all public active polls with ultra-fast caching
 router.get('/', async (req, res) => {
   try {
     const { category, search } = req.query;
+    const cacheKey = `polls_${category || 'All'}_${search || ''}`;
+
+    const cached = pollsCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return res.json(cached.data);
+    }
+
     let query: any = { isPublic: true };
 
     if (category && category !== 'All') {
@@ -63,11 +81,16 @@ router.get('/', async (req, res) => {
     const polls = await Poll.find(query)
       .sort({ createdAt: -1 })
       .populate('creator', 'username avatar');
+
+    // Store in cache for instant subsequent requests
+    pollsCache.set(cacheKey, { data: polls, expiry: Date.now() + CACHE_TTL_MS });
+
     res.json(polls);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch polls' });
   }
 });
+
 
 // Get specific poll
 router.get('/:id', async (req, res) => {
@@ -154,6 +177,9 @@ router.post('/:id/vote', authMiddleware, async (req: AuthRequest, res: Response)
     await poll.save();
     await poll.populate('creator', 'username avatar');
 
+    // Invalidate cache
+    invalidatePollsCache();
+
     // Emit live update via socket.io
     const io: Server = req.app.get('io');
     if (io) {
@@ -165,6 +191,7 @@ router.post('/:id/vote', authMiddleware, async (req: AuthRequest, res: Response)
     }
 
     res.json({ message: 'Vote recorded', poll });
+
   } catch (error) {
     console.error('Vote Error:', error);
     res.status(500).json({ error: 'Failed to cast vote' });

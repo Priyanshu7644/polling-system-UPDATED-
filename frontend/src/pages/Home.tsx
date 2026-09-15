@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
-import api, { exams, surveys } from '../api';
+import api, { exams, surveys, SOCKET_URL } from '../api';
 import { AuthContext } from '../App';
 import TemplateNav from '../components/layout/TemplateNav';
 import ShareModal from '../components/ShareModal';
@@ -25,8 +25,10 @@ interface Poll {
   _id: string;
   title: string;
   description: string;
-  options: PollOption[];
   category: string;
+  options: PollOption[];
+  isPublic: boolean;
+  expiresAt?: string;
   createdAt: string;
   creator: {
     _id: string;
@@ -38,10 +40,37 @@ const CATEGORIES = ['All', 'Technology', 'Entertainment', 'Social', 'Politics', 
 
 export default function Home() {
   const { user } = useContext(AuthContext);
-  const [polls, setPolls] = useState<Poll[]>([]);
-  const [examItems, setExamItems] = useState<any[]>([]);
-  const [surveyItems, setSurveyItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Instant SWR Cache: initialize from cache immediately (0ms delay)
+  const [polls, setPolls] = useState<Poll[]>(() => {
+    try {
+      const cached = localStorage.getItem('pulse_cached_polls');
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+
+  const [examItems, setExamItems] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('pulse_cached_exams');
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+
+  const [surveyItems, setSurveyItems] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('pulse_cached_surveys');
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+
+  // If we already have cached items, don't show full-page loading spinner!
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('pulse_cached_polls');
+      return !cached || JSON.parse(cached).length === 0;
+    } catch { return true; }
+  });
+
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,28 +84,43 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       try {
         if (activeTab === 'polls') {
           const res = await api.get('/polls', { params: { category: activeCategory !== 'All' ? activeCategory : undefined, search: searchQuery } });
           setPolls(res.data);
+          if (!searchQuery && activeCategory === 'All') {
+            localStorage.setItem('pulse_cached_polls', JSON.stringify(res.data));
+          }
         } else if (activeTab === 'exams') {
           const res = await exams.getAll();
-          setExamItems(res.data.filter((e: any) => e.title.toLowerCase().includes(searchQuery.toLowerCase())));
+          const items = res.data.filter((e: any) => e.title.toLowerCase().includes(searchQuery.toLowerCase()));
+          setExamItems(items);
+          if (!searchQuery) localStorage.setItem('pulse_cached_exams', JSON.stringify(res.data));
         } else if (activeTab === 'surveys') {
           const res = await surveys.getAll();
-          setSurveyItems(res.data.filter((s: any) => s.title.toLowerCase().includes(searchQuery.toLowerCase())));
+          const items = res.data.filter((s: any) => s.title.toLowerCase().includes(searchQuery.toLowerCase()));
+          setSurveyItems(items);
+          if (!searchQuery) localStorage.setItem('pulse_cached_surveys', JSON.stringify(res.data));
         }
-      } catch (err) { console.error(err); }
-      setLoading(false);
+      } catch (err) {
+        console.error('Fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
 
     if (activeTab === 'polls') {
-      const socket: Socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000');
+      const socket: Socket = io(SOCKET_URL);
       socket.on('liveUsers', (count) => setLiveUsers(count));
       socket.on('newPoll', (poll: Poll) => {
-        if (activeCategory === 'All' || poll.category === activeCategory) setPolls(prev => [poll, ...prev]);
+        if (activeCategory === 'All' || poll.category === activeCategory) {
+          setPolls(prev => {
+            const next = [poll, ...prev];
+            localStorage.setItem('pulse_cached_polls', JSON.stringify(next));
+            return next;
+          });
+        }
       });
       return () => { socket.disconnect(); };
     }
