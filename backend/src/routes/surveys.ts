@@ -34,14 +34,20 @@ router.post('/', authMiddleware, verifiedMiddleware, async (req: AuthRequest, re
 // Get all published surveys
 router.get('/', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json([]);
+    }
+
     const surveys = await Survey.find({ status: 'published' })
       .sort({ createdAt: -1 })
       .populate('creator', 'username avatar');
     res.json(surveys);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch surveys' });
+  } catch (error: any) {
+    console.error('Error fetching surveys:', error.message || error);
+    res.status(500).json({ error: 'Failed to fetch surveys', details: error.message });
   }
 });
+
 
 // Get specific survey
 router.get('/:id', async (req, res) => {

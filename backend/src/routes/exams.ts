@@ -39,6 +39,10 @@ router.post('/', authMiddleware, verifiedMiddleware, async (req: AuthRequest, re
 // Get all published exams
 router.get('/', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json([]);
+    }
+
     const exams = await Exam.find({ status: 'published' })
       .sort({ startTime: 1 })
       .populate('teacher', 'username avatar');
@@ -55,10 +59,12 @@ router.get('/', async (req, res) => {
     });
 
     res.json(safeExams);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch exams' });
+  } catch (error: any) {
+    console.error('Error fetching exams:', error.message || error);
+    res.status(500).json({ error: 'Failed to fetch exams', details: error.message });
   }
 });
+
 
 // Get specific exam
 router.get('/:id', optionalAuthMiddleware, async (req: AuthRequest, res: Response) => {

@@ -65,6 +65,11 @@ router.get('/', async (req, res) => {
       return res.json(cached.data);
     }
 
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('[MongoDB] Database not connected. Check MONGODB_URI environment variable.');
+      return res.json([]);
+    }
+
     let query: any = { isPublic: true };
 
     if (category && category !== 'All') {
@@ -86,10 +91,12 @@ router.get('/', async (req, res) => {
     pollsCache.set(cacheKey, { data: polls, expiry: Date.now() + CACHE_TTL_MS });
 
     res.json(polls);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch polls' });
+  } catch (error: any) {
+    console.error('Error fetching polls:', error.message || error);
+    res.status(500).json({ error: 'Failed to fetch polls', details: error.message });
   }
 });
+
 
 
 // Get specific poll
