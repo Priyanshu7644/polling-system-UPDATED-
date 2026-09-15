@@ -14,12 +14,15 @@ services:
         sync: false # Set in Render Dashboard (MongoDB Atlas connection string)
       - key: JWT_SECRET
         generateValue: true
+      - key: BACKEND_URL
+        value: "https://polling-backend.onrender.com"
       - key: CLIENT_URL
         value: "https://polling-frontend.onrender.com"
       - key: EMAIL_USER
         sync: false # Set in Render Dashboard
       - key: EMAIL_PASS
         sync: false # Set in Render Dashboard
+
 
   # Frontend Static Site
   - type: web

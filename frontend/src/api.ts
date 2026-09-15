@@ -8,6 +8,12 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
+// Non-blocking warmup ping to wake up backend immediately on app load
+if (typeof window !== 'undefined') {
+  fetch(`${API_URL}/health`).catch(() => {});
+}
+
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {

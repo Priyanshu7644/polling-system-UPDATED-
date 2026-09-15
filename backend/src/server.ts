@@ -23,8 +23,10 @@ import examRoutes from './routes/exams';
 import surveyRoutes from './routes/surveys';
 import analyticsRoutes from './routes/analytics';
 import userRoutes from './routes/users';
+import { startKeepAlive } from './utils/keepAlive';
 
 app.use(cors());
+
 app.use(express.json());
 
 // Make io accessible to routes
@@ -113,7 +115,9 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pollin
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server listening on port ${PORT} (0.0.0.0)`);
+  startKeepAlive();
 });
+
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
