@@ -1,519 +1,443 @@
 import { useEffect, useState, useContext } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
-import api, { exams, surveys, SOCKET_URL } from '../api';
+import api, { exams, SOCKET_URL } from '../api';
 import { AuthContext } from '../App';
-import TemplateNav from '../components/layout/TemplateNav';
-import ShareModal from '../components/ShareModal';
-import { Clock, Users, Zap, Trash2, Search, Share2, Trophy, ClipboardList, ChevronRight, LayoutGrid, List, BarChart3, ShieldCheck } from 'lucide-react';
-
-import { twMerge } from 'tailwind-merge';
-import clsx from 'clsx';
-
-function cx(...inputs: (string | undefined | null | false)[]) {
-  return twMerge(clsx(inputs));
-}
-
-interface PollOption {
-  _id: string;
-  text: string;
-  votes: number;
-}
-
-interface Poll {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  options: PollOption[];
-  isPublic: boolean;
-  expiresAt?: string;
-  createdAt: string;
-  creator: {
-    _id: string;
-    username: string;
-  };
-}
-
-const CATEGORIES = ['All', 'Technology', 'Entertainment', 'Social', 'Politics', 'Sports', 'Other'];
+import {
+  Zap, BookOpen, ClipboardList, BarChart3, ChevronRight,
+  Sparkles, ShieldCheck, Flame, Users, Clock, Award,
+  ArrowRight, Activity, ChevronDown
+} from 'lucide-react';
 
 export default function Home() {
   const { user } = useContext(AuthContext);
 
-  // Instant SWR Cache: initialize from cache immediately (0ms delay)
-  const [polls, setPolls] = useState<Poll[]>(() => {
-    try {
-      const cached = localStorage.getItem('pulse_cached_polls');
-      return cached ? JSON.parse(cached) : [];
-    } catch { return []; }
-  });
-
-  const [examItems, setExamItems] = useState<any[]>(() => {
-    try {
-      const cached = localStorage.getItem('pulse_cached_exams');
-      return cached ? JSON.parse(cached) : [];
-    } catch { return []; }
-  });
-
-  const [surveyItems, setSurveyItems] = useState<any[]>(() => {
-    try {
-      const cached = localStorage.getItem('pulse_cached_surveys');
-      return cached ? JSON.parse(cached) : [];
-    } catch { return []; }
-  });
-
-  // If we already have cached items, don't show full-page loading spinner!
-  const [loading, setLoading] = useState(() => {
-    try {
-      const cached = localStorage.getItem('pulse_cached_polls');
-      return !cached || JSON.parse(cached).length === 0;
-    } catch { return true; }
-  });
-
-  const [filter, setFilter] = useState<'all' | 'mine'>('all');
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [liveUsers, setLiveUsers] = useState(0);
-  const [shareData, setShareData] = useState({ isOpen: false, title: '', url: '' });
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as 'polls' | 'exams' | 'surveys') || 'polls';
-  const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
-
-  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
+  const [topPolls, setTopPolls] = useState<any[]>([]);
+  const [topExams, setTopExams] = useState<any[]>([]);
+  const [liveUsers, setLiveUsers] = useState(1);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBestItems = async () => {
       try {
-        if (activeTab === 'polls') {
-          const res = await api.get('/polls', { params: { category: activeCategory !== 'All' ? activeCategory : undefined, search: searchQuery } });
-          setPolls(res.data);
-          if (!searchQuery && activeCategory === 'All') {
-            localStorage.setItem('pulse_cached_polls', JSON.stringify(res.data));
-          }
-        } else if (activeTab === 'exams') {
-          const res = await exams.getAll();
-          const items = res.data.filter((e: any) => e.title.toLowerCase().includes(searchQuery.toLowerCase()));
-          setExamItems(items);
-          if (!searchQuery) localStorage.setItem('pulse_cached_exams', JSON.stringify(res.data));
-        } else if (activeTab === 'surveys') {
-          const res = await surveys.getAll();
-          const items = res.data.filter((s: any) => s.title.toLowerCase().includes(searchQuery.toLowerCase()));
-          setSurveyItems(items);
-          if (!searchQuery) localStorage.setItem('pulse_cached_surveys', JSON.stringify(res.data));
-        }
+        const [pollsRes, examsRes] = await Promise.all([
+          api.get('/polls'),
+          exams.getAll()
+        ]);
+
+        const sortedPolls = [...pollsRes.data].sort((a, b) => {
+          const vA = a.options?.reduce((s: number, o: any) => s + (o.votes || 0), 0) || 0;
+          const vB = b.options?.reduce((s: number, o: any) => s + (o.votes || 0), 0) || 0;
+          return vB - vA;
+        });
+
+        setTopPolls(sortedPolls.slice(0, 2));
+        setTopExams(examsRes.data.slice(0, 2));
       } catch (err) {
-        console.error('Fetch error:', err);
-      } finally {
-        setLoading(false);
+        console.error('Home data fetch error:', err);
       }
     };
-    fetchData();
 
-    if (activeTab === 'polls') {
-      const socket: Socket = io(SOCKET_URL);
-      socket.on('liveUsers', (count) => setLiveUsers(count));
-      socket.on('newPoll', (poll: Poll) => {
-        if (activeCategory === 'All' || poll.category === activeCategory) {
-          setPolls(prev => {
-            const next = [poll, ...prev];
-            localStorage.setItem('pulse_cached_polls', JSON.stringify(next));
-            return next;
-          });
-        }
-      });
-      return () => { socket.disconnect(); };
+    fetchBestItems();
+
+    const socket: Socket = io(SOCKET_URL);
+    socket.on('liveUsers', (count) => setLiveUsers(count));
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const scrollToModules = () => {
+    const element = document.getElementById('hub-modules');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [activeCategory, searchQuery, activeTab]);
-
-  const handleShare = (e: React.MouseEvent, title: string, type: string, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const baseUrl = window.location.origin;
-    const url = `${baseUrl}/${type}/${id}${type === 'exams' ? '/take' : ''}`;
-    setShareData({ isOpen: true, title, url });
   };
 
-  const getExamStatus = (exam: any) => {
-    if (exam.examType === 'anytime') return { label: 'Universal Access', color: 'bg-neon-blue/10 text-neon-blue border-neon-blue/30' };
-    const now = new Date();
-    const s = new Date(exam.startTime);
-    const e = new Date(exam.endTime);
-    if (now < s) return { label: 'Scheduled', color: 'bg-cyber-500/10 text-cyber-400 border-cyber-500/20' };
-    if (now > e) return { label: 'Concluded', color: 'bg-white/5 text-gray-500 border-white/10' };
-    return { label: 'Active Now', color: 'bg-neon-pink/10 text-neon-pink border-neon-pink/30 animate-pulse' };
-  };
+  // 100% Reliable, HD Unsplash Photos with Fallback Styling
+  const HUB_CARDS = [
+    {
+      title: 'Polls Hub',
+      subtitle: 'Real-time consensus & community voting feed',
+      path: '/polls',
+      badge: 'Hub 01',
+      icon: Zap,
+      color: 'from-indigo-600 to-purple-600',
+      badgeColor: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+      gradientFallback: 'from-amber-950/80 via-rose-950/70 to-slate-950',
+      image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=85'
+    },
+    {
+      title: 'Exams Hub',
+      subtitle: 'AI-proctored test suite & instant gradebook',
+      path: '/exams',
+      badge: 'Hub 02',
+      icon: BookOpen,
+      color: 'from-indigo-600 to-purple-600',
+      badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/30',
+      gradientFallback: 'from-indigo-950/80 via-purple-950/70 to-slate-950',
+      image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=85'
+    },
+    {
+      title: 'Surveys Hub',
+      subtitle: 'Multi-question feedback & audience insights',
+      path: '/surveys',
+      badge: 'Hub 03',
+      icon: ClipboardList,
+      color: 'from-blue-600 to-sky-600',
+      badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
+      gradientFallback: 'from-blue-950/80 via-sky-950/70 to-slate-950',
+      image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200&q=85'
+    },
+    {
+      title: 'Analytics Hub',
+      subtitle: 'Data visualization, trends & report export',
+      path: '/analytics',
+      badge: 'Hub 04',
+      icon: BarChart3,
+      color: 'from-emerald-600 to-teal-600',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
+      gradientFallback: 'from-emerald-950/80 via-teal-950/70 to-slate-950',
+      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=85'
+    }
+  ];
 
   return (
-    <div className="container mx-auto px-4 py-32 max-w-7xl">
-      <div className="flex flex-col items-center text-center mb-16">
-        <div className="flex flex-wrap justify-center gap-3 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md"
-          >
-            <span className="text-sm font-semibold text-cyber-300 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-neon-pink" /> 
-              Intelligence Synchronization
-            </span>
-          </motion.div>
+    <div className="container mx-auto px-4 py-8 max-w-7xl relative space-y-16">
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-block px-4 py-1.5 rounded-full bg-cyber-500/10 border border-cyber-500/30 backdrop-blur-md"
-          >
-            <span className="text-sm font-semibold text-cyber-300 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-neon-blue animate-pulse shadow-[0_0_10px_#0ea5e9]"></span>
-              {liveUsers} Active Nodes
-            </span>
-          </motion.div>
-        </div>
+      {/* ========================================================================= */}
+      {/* 🚀 1. HERO SPLIT SHOWCASE WITH DOWN SCROLL ARROW                          */}
+      {/* ========================================================================= */}
+      <div className="pro-card rounded-[2.8rem] overflow-hidden border border-stone-200/80 dark:border-stone-800/80 bg-white dark:bg-[#151413] shadow-2xl relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[500px]">
 
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-80 -z-10 opacity-40 pointer-events-none">
-          <svg viewBox="0 0 800 400" className="w-full h-full">
-            <defs>
-              <radialGradient id="hubGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.4" />
-                <stop offset="70%" stopColor="#0ea5e9" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <motion.circle 
-              cx="400" cy="200" r="100" fill="url(#hubGlow)"
-              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            />
-            {[...Array(6)].map((_, i) => (
-              <motion.circle
-                key={i} cx="400" cy="200" r="10" fill="#0ea5e9"
-                initial={{ x: 0, y: 0, opacity: 1 }}
-                animate={{ 
-                  x: Math.cos(i * 60 * Math.PI/180) * 300, 
-                  y: Math.sin(i * 60 * Math.PI/180) * 150,
-                  opacity: [0, 1, 0] 
-                }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.3, ease: "linear" }}
-              />
-            ))}
-            <motion.path 
-              d="M100,200 Q400,50 700,200" stroke="#0ea5e9" strokeWidth="0.5" fill="none" opacity="0.2"
-              animate={{ pathLength: [0, 1, 1], pathOffset: [0, 0, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.path 
-              d="M100,200 Q400,350 700,200" stroke="#f43f5e" strokeWidth="0.5" fill="none" opacity="0.2"
-              animate={{ pathLength: [0, 1, 1], pathOffset: [0, 0, 1] }}
-              transition={{ duration: 3, repeat: Infinity, delay: 1.5, ease: "easeInOut" }}
-            />
-          </svg>
-        </div>
-        
-        <motion.h1 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter sm:tracking-tight mb-4 md:mb-6 leading-[0.9] sm:leading-tight uppercase italic text-white relative"
-        >
-          Pulse <span className="text-gradient">Gallery</span>
-        </motion.h1>
-      </div>
+          {/* Left Column: Headline & Call To Actions */}
+          <div className="lg:col-span-7 p-8 sm:p-12 lg:p-14 flex flex-col justify-between relative z-10">
+            <div>
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" /> PULSE 2.0 SUITE
+                </span>
+                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {liveUsers} Active Nodes
+                </span>
+              </div>
 
-      <TemplateNav activeTab={activeTab} setActiveTab={setActiveTab} />
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase italic tracking-tight text-slate-900 dark:text-white leading-[1.08] mb-6">
+                Next-Gen <span className="text-brand-gradient">Consensus & Testing</span> Platform
+              </h1>
 
-      <div className="space-y-8 mt-12 mb-12">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {user && (
-            <div className="bg-[#11131a]/60 p-1.5 rounded-2xl glass border border-white/5 flex shrink-0">
-              <button onClick={() => setFilter('all')} className={cx("px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all", filter === 'all' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white')}>Global</button>
-              <button onClick={() => setFilter('mine')} className={cx("px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all", filter === 'mine' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white')}>Personal</button>
+              <p className="text-slate-600 dark:text-stone-300 text-base sm:text-lg font-medium leading-relaxed mb-8 max-w-xl">
+                Create real-time community polls, proctored AI examinations, multi-question audience surveys, and export deep analytical metrics.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  to="/polls"
+                  className="btn-primary px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2.5 shadow-xl hover:scale-105 transition-all"
+                >
+                  <Zap className="w-4 h-4 fill-white" /> Explore All Polls
+                </Link>
+                <Link
+                  to={user ? "/create" : "/register"}
+                  className="px-8 py-4 rounded-2xl text-xs font-extrabold uppercase tracking-wider bg-slate-100 dark:bg-stone-900 text-slate-900 dark:text-stone-100 border border-slate-200 dark:border-stone-800 hover:border-indigo-500/50 transition-all flex items-center gap-2 shadow-sm"
+                >
+                  Create Now <ArrowRight className="w-4 h-4 text-indigo-500" />
+                </Link>
+              </div>
             </div>
-          )}
 
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="relative flex-grow md:max-w-md group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-neon-blue transition-colors" />
-              <input
-                type="text"
-                placeholder={`Search ${activeTab}...`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-12 pr-4 py-4 bg-[#11131a]/60 border border-white/10 rounded-2xl focus:ring-2 focus:ring-neon-blue/20 text-white placeholder-gray-600 transition-all outline-none"
-              />
-            </div>
-            
-            <div className="hidden sm:flex bg-[#11131a]/60 p-1 rounded-2xl border border-white/5 shadow-inner shrink-0">
-               <button onClick={() => setViewType('grid')} className={cx("p-3 rounded-xl transition-all", viewType === 'grid' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white")} title="Grid View">
-                 <LayoutGrid className="w-5 h-5" />
-               </button>
-               <button onClick={() => setViewType('list')} className={cx("p-3 rounded-xl transition-all", viewType === 'list' ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-white")} title="List View">
-                 <List className="w-5 h-5" />
-               </button>
-            </div>
-          </div>
-        </div>
-
-        {activeTab === 'polls' && (
-          <div className="flex items-center space-x-4 overflow-x-auto pb-4 scrollbar-hide">
-            {CATEGORIES.map((cat) => (
+            {/* Down Arrow Scroll Button inside Hero */}
+            <div className="mt-10 pt-4 flex items-center gap-3 text-slate-500 dark:text-stone-400 text-xs font-extrabold uppercase tracking-widest">
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={cx("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border", activeCategory === cat ? 'bg-neon-blue border-neon-blue text-black' : 'bg-white/5 border-white/5 text-gray-500 hover:text-white')}
+                onClick={scrollToModules}
+                className="flex items-center gap-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group cursor-pointer"
               >
-                {cat}
+                <span>Scroll Down To Modules</span>
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-stone-900 border border-slate-200 dark:border-stone-800 flex items-center justify-center shadow-md animate-bounce group-hover:border-indigo-500">
+                  <ChevronDown className="w-4 h-4 text-indigo-500" />
+                </div>
               </button>
-            ))}
+            </div>
           </div>
-        )}
+
+          {/* Right Column: Sign-In Inspired Dark Showcase Panel */}
+          <div className="lg:col-span-5 relative overflow-hidden min-h-[320px] lg:min-h-full flex items-center justify-center p-8 bg-[#131211]">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-tr from-indigo-600/25 via-purple-600/15 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+            <img
+              src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=85"
+              alt="PULSE Platform Visual"
+              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-55 dark:opacity-40 transition-transform duration-1000 hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0c0b0a] via-[#0c0b0a]/70 to-transparent"></div>
+
+            {/* Floating Sign-In Style Glassmorphism Widgets */}
+            <div className="relative z-10 w-full max-w-sm space-y-4">
+              <div className="p-5 rounded-2xl bg-stone-950/90 backdrop-blur-2xl border border-stone-800 text-white shadow-2xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1">
+                    <Activity className="w-3.5 h-3.5" /> Realtime Node Sync
+                  </span>
+                  <span className="text-[10px] font-bold text-stone-300">Live 100%</span>
+                </div>
+                <div className="text-sm font-bold truncate mb-2 text-white">What features matter most in web dev?</div>
+                <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-950/90 backdrop-blur-2xl border border-stone-800 text-white shadow-2xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-500/30 flex items-center justify-center text-indigo-400 border border-indigo-500/40">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-extrabold uppercase text-white">AI Proctored</div>
+                    <div className="text-[10px] text-stone-300 font-medium">Face & Tab Switch Guard</div>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-500/30">Verified</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-40">
-           <Zap className="w-12 h-12 text-neon-blue animate-pulse" />
+      {/* ========================================================================= */}
+      {/* 🖼️ 2. 4 PRIMARY HUB CARDS WITH 100% RELIABLE IMAGES & FALLBACKS          */}
+      {/* ========================================================================= */}
+      <div id="hub-modules">
+        <div className="text-center mb-10">
+          <span className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+            Platform Modules
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white uppercase italic tracking-tight mt-1">
+            Choose Your <span className="text-brand-gradient">Consensus Hub</span>
+          </h2>
+          <p className="text-slate-600 dark:text-stone-400 text-sm font-medium max-w-md mx-auto mt-2">
+            Click any module below to browse polls, take proctored tests, fill surveys, or analyze data.
+          </p>
         </div>
-      ) : (
-        <div className={cx(
-          "grid gap-8 transition-all duration-500",
-          viewType === 'grid' ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 max-w-4xl mx-auto w-full"
-        )}>
-          {/* Create Card */}
-          {user && (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-              <Link to={activeTab === 'polls' ? '/create' : activeTab === 'exams' ? '/exams/create' : '/surveys/create'} className="block h-full group">
-                <div className={cx(
-                  "h-full glass-card border-2 border-dashed border-white/10 hover:border-neon-blue bg-white/5 hover:bg-neon-blue/5 transition-all duration-300 flex items-center justify-center",
-                  viewType === 'grid' ? "rounded-[2.5rem] p-8 flex-col min-h-[350px]" : "rounded-3xl p-6 min-h-[100px] flex-row gap-6 text-left"
-                )}>
-                  <div className={cx(
-                    "rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-neon-blue group-hover:text-black transition-all shadow-lg",
-                    viewType === 'grid' ? "w-16 h-16 mb-6" : "w-12 h-12"
-                  )}>
-                    <span className={cx("font-light", viewType === 'grid' ? "text-4xl" : "text-2xl")}>+</span>
-                  </div>
-                  <h3 className={cx("font-black text-white uppercase tracking-tight", viewType === 'grid' ? "text-2xl" : "text-lg")}>
-                    Generate {activeTab.slice(0, -1)}
-                  </h3>
-                </div>
-              </Link>
-            </motion.div>
-          )}
 
-          {/* Dynamic Content Mapping */}
-          {activeTab === 'polls' && (filter === 'mine' 
-            ? polls.filter(p => (p.creator?._id || p.creator) === (user?.id || user?._id)) 
-            : polls
-          ).map((poll, i) => (
-             <motion.div key={poll._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="h-full">
-                <div className={cx(
-                   "h-full glass-card relative overflow-hidden flex transition-all shadow-2xl group border border-white/5 hover:border-white/10",
-                   viewType === 'grid' ? "flex-col rounded-[2.5rem] p-8" : "flex-row items-center rounded-2xl p-4 md:p-6 gap-6"
-                )}>
-                   <div className="absolute top-0 right-0 w-32 h-32 bg-neon-blue/5 blur-3xl pointer-events-none group-hover:bg-neon-blue/10 transition-colors"></div>
-                   
-                   <div className={cx("flex items-center", viewType === 'grid' ? "justify-between mb-6" : "gap-4 shrink-0")}>
-                      <span className="px-3 py-1 bg-cyber-500/10 border border-cyber-500/20 rounded-full text-[9px] font-black uppercase tracking-widest text-cyber-500">
-                        {poll.category || 'Standard Access'}
-                      </span>
-                      <div className="flex gap-2">
-                        <button onClick={(e) => handleShare(e, poll.title, 'poll', poll._id)} className="p-2.5 bg-white/5 rounded-xl hover:bg-cyber-500 hover:text-black transition-all">
-                          <Share2 className="w-4 h-4" />
-                        </button>
-                        {user && (user.id === (poll.creator?._id || poll.creator) || user._id === (poll.creator?._id || poll.creator)) && (
-                          <div className="flex gap-2">
-                             <Link 
-                               to={`/poll/${poll._id}/analytics`}
-                               className="p-2.5 bg-white/5 rounded-xl hover:bg-sky-500 hover:text-black transition-all"
-                               title="View Analytics"
-                             >
-                               <BarChart3 className="w-4 h-4" />
-                             </Link>
-                             <button 
-                               onClick={async (e) => {
-                                 e.preventDefault();
-                                 if (window.confirm('Decommission this poll node?')) {
-                                   try { await api.delete(`/polls/${poll._id}`); setPolls(polls.filter(p => p._id !== poll._id)); } catch (err) {}
-                                 }
-                               }}
-                               className="p-2.5 bg-white/5 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                             >
-                               <Trash2 className="w-4 h-4" />
-                             </button>
-                          </div>
-                        )}
-                      </div>
-                   </div>
-
-                   <Link to={`/poll/${poll._id}`} className={cx("flex-grow", viewType === 'list' && "flex items-center gap-6")}>
-                      <h3 className={cx("font-black text-white tracking-tight line-clamp-2 italic uppercase", viewType === 'grid' ? "text-2xl mb-4" : "text-lg mb-0")}>{poll.title}</h3>
-                      <div className={cx("space-y-3", viewType === 'grid' ? "mb-8 flex-col" : "hidden sm:flex flex-row items-center gap-4 space-y-0 shrink-0")}>
-                         <div className="flex items-center gap-3 text-gray-500 text-[10px] font-bold uppercase">
-                           <Clock className="w-4 h-4 text-cyber-500" /> {new Date(poll.createdAt).toLocaleDateString()}
-                         </div>
-                      </div>
-                   </Link>
-
-                   <div className={cx("flex items-center text-[10px] font-black uppercase text-gray-500 tracking-widest", viewType === 'grid' ? "mt-auto justify-between" : "ml-auto shrink-0 gap-6")}>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-cyber-400" /> {poll.options.reduce((a, b) => a + b.votes, 0)}</div>
-                        <div className="w-1 h-1 rounded-full bg-gray-700"></div>
-                        <div className="hidden sm:block text-[8px] opacity-70">By {(poll.creator?.username || 'SYSTEM')}</div>
-                      </div>
-                      <Link to={`/poll/${poll._id}`} className="p-3 bg-cyber-500/10 border border-cyber-500/20 rounded-xl hover:bg-cyber-500 hover:text-black transition-all">
-                         <ChevronRight className="w-4 h-4" />
-                      </Link>
-                   </div>
-                </div>
-             </motion.div>
-          ))}
-
-          {activeTab === 'exams' && (filter === 'mine' 
-            ? examItems.filter(e => (e.teacher?._id || e.teacher) === (user?.id || user?._id)) 
-            : examItems
-          ).map((exam, i) => {
-            const status = getExamStatus(exam);
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {HUB_CARDS.map((hub, idx) => {
+            const Icon = hub.icon;
             return (
-              <motion.div key={exam._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="h-full">
-                <div className={cx(
-                  "h-full glass-card relative overflow-hidden flex transition-all shadow-2xl group border border-white/5 hover:border-white/10",
-                  viewType === 'grid' ? "flex-col rounded-[2.5rem] p-8" : "flex-row items-center rounded-2xl p-4 md:p-6 gap-6"
-                )}>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-neon-pink/5 blur-3xl pointer-events-none group-hover:bg-neon-pink/10 transition-colors"></div>
-                    
-                    <div className={cx("flex items-center", viewType === 'grid' ? "justify-between mb-6" : "gap-4 shrink-0")}>
-                       <div className={cx("px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border", status.color)}>
-                         {status.label}
-                       </div>
-                       <div className="flex gap-2">
-                        <button onClick={(e) => handleShare(e, exam.title, 'exams', exam._id)} className="p-2.5 bg-white/5 rounded-xl hover:bg-neon-pink hover:text-black transition-all">
-                          <Share2 className="w-4 h-4" />
-                        </button>
-                        {user && (user.id === (exam.teacher?._id || exam.teacher) || user._id === (exam.teacher?._id || exam.teacher)) && (
-                          <div className="flex gap-2">
-                             <Link 
-                               to={`/exams/${exam._id}`}
-                               className="p-2.5 bg-white/5 rounded-xl hover:bg-amber-400 hover:text-black transition-all"
-                               title="View Gradebook"
-                             >
-                               <Trophy className="w-4 h-4" />
-                             </Link>
-                             <button 
-                               onClick={async (e) => {
-                                 e.preventDefault();
-                                 if (window.confirm('Decommission this exam node?')) {
-                                   try { await api.delete(`/exams/${exam._id}`); setExamItems(prev => prev.filter(e => e._id !== exam._id)); } catch (err) {}
-                                 }
-                               }}
-                               className="p-2.5 bg-white/5 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                             >
-                               <Trash2 className="w-4 h-4" />
-                             </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+              <motion.div
+                key={hub.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <Link
+                  to={hub.path}
+                  className="pro-card rounded-[2.2rem] overflow-hidden border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#151413] shadow-lg hover:shadow-2xl hover:scale-[1.03] transition-all flex flex-col justify-between group h-full min-h-[340px] relative"
+                >
+                  {/* Background Artwork Image with Fallback Gradient */}
+                  <div className={`absolute inset-0 z-0 overflow-hidden bg-gradient-to-br ${hub.gradientFallback}`}>
+                    <img
+                      src={hub.image}
+                      alt={hub.title}
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 opacity-60 dark:opacity-45"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0c0b0a] via-[#0c0b0a]/75 to-transparent"></div>
+                  </div>
 
-                    <Link to={`/exams/${exam._id}`} className={cx("flex-grow", viewType === 'list' && "flex items-center gap-6")}>
-                       <h3 className={cx("font-black text-white tracking-tight line-clamp-2 italic uppercase", viewType === 'grid' ? "text-2xl mb-4" : "text-lg mb-0")}>{exam.title}</h3>
-                       <div className={cx("space-y-3", viewType === 'grid' ? "mb-8 flex-col" : "hidden sm:flex flex-row items-center gap-4 space-y-0 shrink-0")}>
-                         <div className="flex items-center gap-3 text-gray-500 text-[10px] font-bold uppercase">
-                           <Clock className="w-4 h-4 text-neon-pink" /> {exam.duration}m
-                         </div>
-                       </div>
-                    </Link>
-
-                    <div className={cx("flex items-center text-[10px] font-black uppercase text-gray-500 tracking-widest", viewType === 'grid' ? "mt-auto justify-between" : "ml-auto shrink-0 gap-6")}>
-                       <div className="flex items-center gap-2"><Trophy className="w-3.5 h-3.5 text-cyber-400" /> {exam.questions.length} Items</div>
-                       <Link to={`/exams/${exam._id}/take`} className="p-3 bg-neon-pink/10 border border-neon-pink/20 rounded-xl hover:bg-neon-pink hover:text-black transition-all">
-                          <ChevronRight className="w-4 h-4" />
-                       </Link>
+                  {/* Top Badge & Glowing Icon */}
+                  <div className="relative z-10 p-6 flex items-center justify-between">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border backdrop-blur-md ${hub.badgeColor}`}>
+                      {hub.badge}
+                    </span>
+                    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-tr ${hub.color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-5 h-5" />
                     </div>
-                </div>
+                  </div>
+
+                  {/* Title & Subtitle */}
+                  <div className="relative z-10 p-6 pt-2 text-white mt-auto">
+                    <h3 className="text-2xl font-black uppercase tracking-tight mb-2 group-hover:text-indigo-400 transition-colors">
+                      {hub.title}
+                    </h3>
+                    <p className="text-xs text-stone-200 dark:text-stone-300 font-medium leading-relaxed mb-4">
+                      {hub.subtitle}
+                    </p>
+
+                    <div className="flex items-center justify-between text-xs font-bold text-white pt-3 border-t border-white/15 group-hover:text-indigo-400 transition-colors">
+                      <span>Open {hub.title}</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
               </motion.div>
             );
           })}
-
-          {activeTab === 'surveys' && (filter === 'mine' 
-             ? surveyItems.filter(s => (s.creator?._id || s.creator) === (user?.id || user?._id)) 
-             : surveyItems
-          ).map((survey, i) => (
-             <motion.div key={survey._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="h-full">
-                <div className={cx(
-                   "h-full glass-card relative overflow-hidden flex transition-all shadow-2xl group border border-white/5 hover:border-white/10",
-                   viewType === 'grid' ? "flex-col rounded-[2.5rem] p-8" : "flex-row items-center rounded-2xl p-4 md:p-6 gap-6"
-                )}>
-                   <div className="absolute top-0 right-0 w-32 h-32 bg-cyber-500/5 blur-3xl pointer-events-none group-hover:bg-cyber-500/10 transition-colors"></div>
-                                      <div className={cx("flex items-center", viewType === 'grid' ? "justify-between mb-6" : "gap-4 shrink-0")}>
-                       <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-400">Survey Module</span>
-                       <div className="flex gap-2">
-                          <button onClick={(e) => handleShare(e, survey.title, 'surveys', survey._id)} className="p-2.5 bg-white/5 rounded-xl hover:bg-cyber-500 hover:text-black transition-all">
-                            <Share2 className="w-4 h-4" />
-                          </button>
-                          {user && (user.id === (survey.creator?._id || survey.creator) || user._id === (survey.creator?._id || survey.creator)) && (
-                            <div className="flex gap-2">
-                               <Link 
-                                 to={`/surveys/${survey._id}/results`}
-                                 className="p-2.5 bg-white/5 rounded-xl hover:bg-sky-500 hover:text-black transition-all"
-                                 title="View Results"
-                               >
-                                 <BarChart3 className="w-4 h-4" />
-                               </Link>
-                               <button 
-                                 onClick={async (e) => {
-                                   e.preventDefault();
-                                   if (window.confirm('Terminate this survey cycle?')) {
-                                     try { await api.delete(`/surveys/${survey._id}`); setSurveyItems(prev => prev.filter(s => s._id !== survey._id)); } catch (err) {}
-                                   }
-                                 }}
-                                 className="p-2.5 bg-white/5 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                               >
-                                 <Trash2 className="w-4 h-4" />
-                               </button>
-                            </div>
-                          )}
-                       </div>
-                    </div>
-
-                   <Link to={`/surveys/${survey._id}`} className={cx("flex-grow", viewType === 'list' && "flex items-center gap-6")}>
-                      {viewType === 'grid' && (
-                        <div className="p-4 w-fit rounded-2xl bg-cyber-500/10 border border-cyber-500/20 text-cyber-500 mb-4 items-center justify-center flex">
-                           <ClipboardList className="w-6 h-6" />
-                        </div>
-                      )}
-                      <h3 className={cx("font-black text-white tracking-tight line-clamp-2 italic uppercase", viewType === 'grid' ? "text-2xl mb-6" : "text-lg mb-0")}>{survey.title}</h3>
-                   </Link>
-
-                   <div className={cx("flex items-center text-[10px] font-black uppercase text-gray-500 tracking-widest", viewType === 'grid' ? "mt-auto justify-between" : "ml-auto shrink-0 gap-6")}>
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <Users className="w-3.5 h-3.5 text-cyber-500" /> {survey.responsesCount || 0} Nodes
-                      </div>
-                      <Link to={`/surveys/${survey._id}`} className="p-3 bg-cyber-500/10 border border-cyber-500/20 rounded-xl hover:bg-cyber-500 hover:text-black transition-all">
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>
-                   </div>
-                </div>
-             </motion.div>
-          ))}
         </div>
-      )}
+      </div>
 
-      {!loading && polls.length === 0 && activeTab === 'polls' && (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-64 h-64 opacity-20 relative">
-             <div className="absolute inset-0 bg-cyber-500 blur-[60px] animate-pulse"></div>
-             <ShieldCheck className="w-full h-full text-white/20 relative z-10" />
+      {/* ========================================================================= */}
+      {/* 🌟 3. HIGHLIGHTED BEST POLLS & EXAMS                                      */}
+      {/* ========================================================================= */}
+      <div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+              <Flame className="w-4 h-4 text-indigo-500" /> Platform Showcase
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic mt-1">
+              Top Active <span className="text-brand-gradient">Consensus & Tests</span>
+            </h2>
           </div>
-          <p className="text-gray-500 font-bold uppercase tracking-widest text-[8px] mt-4">Node search complete: Zero matches in this sector</p>
+          <Link to="/polls" className="hidden sm:flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+            View All <ChevronRight className="w-4 h-4" />
+          </Link>
         </div>
-      )}
 
-      {/* Share Modal */}
-      <ShareModal 
-        isOpen={shareData.isOpen}
-        onClose={() => setShareData({ ...shareData, isOpen: false })}
-        title={shareData.title}
-        url={shareData.url}
-      />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Top Voted Poll Showcase */}
+          {topPolls[0] && (
+            <div className="pro-card rounded-[2.5rem] p-7 border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#151413] shadow-lg flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> #1 Voted Poll
+                </span>
+                <span className="text-xs font-bold text-slate-500 dark:text-stone-400 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-indigo-500" />
+                  {topPolls[0].options?.reduce((s: number, o: any) => s + (o.votes || 0), 0) || 0} Votes
+                </span>
+              </div>
+
+              <Link to={`/poll/${topPolls[0]._id}`}>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-4 hover:text-indigo-500 transition-colors">
+                  {topPolls[0].title}
+                </h3>
+              </Link>
+
+              {/* Progress Bar Preview */}
+              <div className="space-y-2 mb-6">
+                {topPolls[0].options?.slice(0, 3).map((opt: any, idx: number) => {
+                  const total = topPolls[0].options?.reduce((s: number, o: any) => s + (o.votes || 0), 0) || 1;
+                  const pct = Math.round((opt.votes / total) * 100);
+                  return (
+                    <div key={idx} className="relative overflow-hidden bg-slate-100 dark:bg-stone-900 rounded-xl p-2.5">
+                      <div className="absolute inset-y-0 left-0 bg-indigo-500/20 dark:bg-indigo-500/30 rounded-xl transition-all" style={{ width: `${pct}%` }}></div>
+                      <div className="relative z-10 flex justify-between text-xs font-bold text-slate-800 dark:text-stone-200">
+                        <span className="truncate pr-2">{opt.text}</span>
+                        <span className="text-indigo-600 dark:text-indigo-400 font-black">{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <Link
+                to={`/poll/${topPolls[0]._id}`}
+                className="btn-primary w-full py-3 rounded-2xl text-xs font-black uppercase tracking-wider text-center flex items-center justify-center gap-2 shadow-md shadow-indigo-500/25"
+              >
+                Participate in Vote <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
+
+          {/* Top Exam Showcase */}
+          {topExams[0] && (
+            <div className="pro-card rounded-[2.5rem] p-7 border border-slate-200 dark:border-stone-800 bg-white dark:bg-[#151413] shadow-lg flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-400 text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-indigo-500" /> Featured Assessment
+                </span>
+                <span className="text-xs font-bold text-slate-500 dark:text-stone-400 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                  {topExams[0].duration} mins
+                </span>
+              </div>
+
+              <Link to={`/exams/${topExams[0]._id}`}>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-3 hover:text-indigo-600 transition-colors">
+                  {topExams[0].title}
+                </h3>
+              </Link>
+
+              <p className="text-xs text-slate-600 dark:text-stone-400 font-medium line-clamp-3 mb-6">
+                {topExams[0].description || 'AI-proctored examination with live tab-monitoring and automated scoring.'}
+              </p>
+
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-stone-400 mb-6 pt-3 border-t border-slate-100 dark:border-stone-800">
+                <span>{topExams[0].questions?.length || 0} Multiple Choice Questions</span>
+                <span className="text-indigo-600 dark:text-indigo-400">Proctored Node</span>
+              </div>
+
+              <Link
+                to={`/exams/${topExams[0]._id}/take`}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider text-center flex items-center justify-center gap-2 shadow-md shadow-indigo-500/25 transition-colors"
+              >
+                Take Proctored Exam <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 🚀 4. CTA FOOTER BANNER (Redesigned Glassmorphism)                       */}
+      {/* ========================================================================= */}
+      <div className="rounded-[2.5rem] p-8 md:p-12 border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl shadow-2xl relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-8 group">
+
+        {/* Ambient Gradient Background Glow */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/15 dark:bg-indigo-500/20 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-cyan-500/15 dark:bg-cyan-500/20 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+
+        <div className="relative z-10 max-w-2xl text-center lg:text-left space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em]">
+            <Sparkles className="w-3.5 h-3.5" /> Instant Decision Network
+          </div>
+
+          <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight italic text-slate-900 dark:text-white leading-none">
+            Ready to Launch Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 dark:from-indigo-400 dark:via-purple-400 dark:to-cyan-400">Consensus?</span>
+          </h2>
+
+          <p className="text-xs md:text-sm font-medium text-slate-600 dark:text-stone-400 max-w-lg">
+            Create custom polls, proctored examinations, or interactive surveys in under 60 seconds.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-stone-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> Instant Creation
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Real-Time Analytics
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" /> Verifiable Nodes
+            </span>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex flex-wrap items-center justify-center gap-4 shrink-0">
+          <Link
+            to={user ? "/create" : "/register"}
+            className="btn-primary px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20 flex items-center gap-2.5 group/btn hover:scale-[1.02] transition-all"
+          >
+            <span>Create Now</span>
+            <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+          </Link>
+
+          <Link
+            to="/polls"
+            className="px-8 py-4 rounded-2xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 text-slate-800 dark:text-stone-200 border border-slate-200/80 dark:border-white/10 font-bold text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-sm"
+          >
+            Browse All Polls
+          </Link>
+        </div>
+      </div>
+
+
+
     </div>
   );
 }

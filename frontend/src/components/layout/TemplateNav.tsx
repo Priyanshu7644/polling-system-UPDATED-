@@ -53,10 +53,10 @@ export default function TemplateNav({ activeTab, setActiveTab }: TemplateNavProp
   ];
 
   return (
-    <div className="w-full mx-auto my-12 flex flex-col items-center relative px-4">
-      {/* Pills Container */}
-      <div className="bg-[#11131a]/60 backdrop-blur-xl rounded-full p-1.5 flex items-center shadow-2xl border border-white/10 ring-1 ring-white/5 relative min-w-fit max-w-[95vw]">
-        <div className="flex items-center space-x-1 md:space-x-2 px-1 py-1 w-full overflow-x-auto scrollbar-hide">
+    <div className="w-full mx-auto my-8 flex flex-col items-center relative px-4 z-20">
+      {/* Capsule Container */}
+      <div className="bg-slate-100 dark:bg-slate-900/80 backdrop-blur-2xl rounded-full p-1.5 flex items-center shadow-md dark:shadow-2xl border border-slate-300/80 dark:border-white/10 relative min-w-fit max-w-[95vw]">
+        <div className="flex items-center space-x-1 md:space-x-2 px-1 py-0.5 w-full overflow-x-auto scrollbar-hide">
           {navItems.map((item) => {
             const isActive = activeTab ? activeTab === item.id : location.pathname === item.path;
             
@@ -73,25 +73,25 @@ export default function TemplateNav({ activeTab, setActiveTab }: TemplateNavProp
                   to={item.path}
                   onClick={handleItemClick}
                   className={cx(
-                    "flex items-center gap-2 px-3 md:px-6 py-2.5 md:py-3.5 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all duration-300 relative whitespace-nowrap",
+                    "flex items-center gap-2 px-4 md:px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 relative whitespace-nowrap",
                     isActive 
-                      ? "bg-white text-black shadow-xl" 
-                      : "text-gray-400 hover:text-gray-200"
+                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30" 
+                      : "text-slate-700 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-white/5"
                   )}
                 >
-                  <span className={cx(isActive ? "text-black" : "text-gray-400")}>{item.icon}</span>
+                  <span className={cx(isActive ? "text-white" : "text-slate-500 dark:text-slate-400")}>{item.icon}</span>
                   {item.name}
                 </Link>
               </div>
             );
           })}
           
-          <div className="flex items-center h-6 border-l border-white/10 mx-2 shrink-0" />
+          <div className="flex items-center h-5 border-l border-slate-300 dark:border-white/10 mx-2 shrink-0" />
 
           {secondaryItems.map(item => (
             <span 
               key={item.name}
-              className="text-[10px] font-black uppercase tracking-widest text-gray-600 px-4 cursor-not-allowed select-none transition-colors hover:text-gray-500 shrink-0"
+              className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 cursor-not-allowed select-none transition-colors shrink-0"
               title="Coming soon"
             >
               {item.name}

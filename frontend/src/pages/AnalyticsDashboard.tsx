@@ -2,16 +2,14 @@ import { useEffect, useState } from 'react';
 import { analytics } from '../api';
 import AnalyticsSummaryCards from '../components/analytics/AnalyticsSummaryCards';
 import { EngagementTimeline, CategoryDistPie, PopularPollsBar } from '../components/analytics/AnalyticsCharts';
-import { BarChart3, TrendingUp, PieChart as PieChartIcon, ArrowLeft, Zap, Sparkles } from 'lucide-react';
-import TemplateNav from '../components/layout/TemplateNav';
+import { BarChart3, TrendingUp, Zap, Sparkles, Activity, Layers, Award, Radio } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 
 export default function AnalyticsDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'leaderboard'>('overview');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -32,11 +30,10 @@ export default function AnalyticsDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center relative overflow-hidden">
-        <div className="mesh-bg"></div>
-        <div className="relative w-24 h-24 z-10 flex items-center justify-center">
-             <div className="absolute inset-0 rounded-full border-b-4 border-cyber-500 animate-spin"></div>
-             <Zap className="w-8 h-8 text-neon-pink animate-pulse" />
+      <div className="py-24 flex items-center justify-center relative overflow-hidden">
+        <div className="relative w-16 h-16 z-10 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-b-4 border-indigo-600 dark:border-indigo-400 animate-spin" />
+          <Zap className="w-6 h-6 text-indigo-600 dark:text-indigo-400 animate-pulse" />
         </div>
       </div>
     );
@@ -44,13 +41,12 @@ export default function AnalyticsDashboard() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center relative overflow-hidden">
-        <div className="mesh-bg"></div>
-        <div className="relative z-10 glass-card p-10 rounded-[2.5rem] text-center border border-white/10 max-w-md mx-4">
-          <p className="text-red-400 font-bold text-xl mb-6">{error || 'Network Error'}</p>
+      <div className="py-16 flex items-center justify-center px-4">
+        <div className="pro-card rounded-3xl p-8 text-center border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl max-w-md mx-auto shadow-xl">
+          <p className="text-rose-500 font-bold text-lg mb-4">{error || 'Network Telemetry Error'}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-gradient-to-r from-neon-pink to-cyber-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+            className="btn-primary px-6 py-2.5 rounded-2xl font-black uppercase tracking-wider shadow-lg text-xs"
           >
             Retry Connection
           </button>
@@ -60,124 +56,146 @@ export default function AnalyticsDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg text-gray-100 font-sans relative overflow-x-hidden pb-20">
-      <div className="mesh-bg"></div>
+    <div className="max-w-7xl mx-auto space-y-8 relative z-10 pb-12">
       
-      {/* Visual Accents */}
-      <div className="fixed -top-48 -left-48 w-[600px] h-[600px] bg-cyber-500/10 rounded-full blur-[150px] pointer-events-none"></div>
-      <div className="fixed -bottom-48 -right-48 w-[600px] h-[600px] bg-neon-pink/10 rounded-full blur-[150px] pointer-events-none"></div>
-
-      <header className="relative z-20 pt-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <TemplateNav />
-          
-          <div className="mt-16 flex flex-col items-center text-center">
-             <motion.div 
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8"
-             >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Global Intelligence Portal</span>
-             </motion.div>
-             
-             <motion.h1 
-               initial={{ opacity: 0, scale: 0.95 }}
-               animate={{ opacity: 1, scale: 1 }}
-               className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-none mb-6"
-             >
-               The <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyber-400 to-neon-pink">Analytics</span> Engine
-             </motion.h1>
-             <p className="text-gray-400 text-lg md:text-xl font-medium max-w-2xl opacity-70">
-               Deciphering community sentiments and engagement trends through the high-precision Pulse visualization suite.
-             </p>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 mt-20 relative z-10">
-        <AnalyticsSummaryCards data={data.summary} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-12">
-          {/* Engagement Chart */}
+      {/* Dynamic Header Section */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-2 border-b border-slate-200/60 dark:border-white/10">
+        <div className="text-center md:text-left">
           <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="lg:col-span-8 glass-card p-10 rounded-[3rem] border border-white/5 relative overflow-hidden group"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-2"
           >
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-               <TrendingUp className="w-48 h-48 text-white" />
-            </div>
-            
-            <div className="flex items-center justify-between mb-8 relative z-10">
+             <Radio className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+             <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">Global Telemetry Node</span>
+          </motion.div>
+          
+          <motion.h1 
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic leading-none"
+          >
+            Analytics <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 dark:from-indigo-400 dark:via-purple-400 dark:to-cyan-400">Intelligence</span>
+          </motion.h1>
+          <p className="text-slate-600 dark:text-stone-400 text-xs md:text-sm font-medium mt-1.5">
+            Real-time community voting velocity, participant volume, and category distribution.
+          </p>
+        </div>
+
+        {/* View Selector Tabs */}
+        <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-200/60 dark:bg-white/5 border border-slate-300/60 dark:border-white/10 backdrop-blur-xl">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              activeTab === 'overview'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-600 dark:text-stone-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" /> Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('trends')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              activeTab === 'trends'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-600 dark:text-stone-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5" /> Velocity
+          </button>
+          <button
+            onClick={() => setActiveTab('leaderboard')}
+            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              activeTab === 'leaderboard'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-600 dark:text-stone-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" /> Leaderboard
+          </button>
+        </div>
+      </div>
+
+      {/* Top 4 Summary Metric Cards */}
+      <AnalyticsSummaryCards data={data.summary} />
+
+      {/* Main Charts Grid */}
+      {(activeTab === 'overview' || activeTab === 'trends') && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          
+          {/* Engagement Trajectory Chart (8 Cols) */}
+          <motion.div 
+            initial={{ opacity: 0, x: -15 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-8 rounded-[2.2rem] p-6 sm:p-8 border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl shadow-xl relative group overflow-hidden"
+          >
+            <div className="flex items-center justify-between mb-4 relative z-10">
               <div>
-                <h2 className="text-2xl font-black text-white tracking-tight uppercase flex items-center gap-3">
-                  <TrendingUp className="h-6 w-6 text-cyber-400" />
-                  Growth Trajectory
+                <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic flex items-center gap-2.5">
+                  <TrendingUp className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  Voting Engagement Velocity
                 </h2>
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1 ml-9">30 Day Engagement Pulse</p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-stone-400 uppercase tracking-widest mt-0.5 ml-7">30-Day Activity Stream</p>
+              </div>
+              
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                <Activity className="w-3 h-3 text-emerald-500 animate-pulse" /> Live Feed
               </div>
             </div>
+
             <EngagementTimeline data={data.votesOverTime} />
           </motion.div>
 
-          {/* Category Distribution */}
+          {/* Category Share Donut Chart (4 Cols) */}
           <motion.div 
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 15 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="lg:col-span-4 glass-card p-10 rounded-[3rem] border border-white/5 flex flex-col justify-center items-center relative overflow-hidden group"
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-4 rounded-[2.2rem] p-6 sm:p-8 border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl shadow-xl flex flex-col justify-between items-center relative group overflow-hidden"
           >
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-neon-pink/10 blur-[80px] rounded-full"></div>
-            
-            <div className="text-center mb-10 w-full relative z-10">
-              <h2 className="text-xl font-black text-white tracking-tight uppercase">Segment Split</h2>
-              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Topic Diversification</p>
+            <div className="text-center w-full relative z-10">
+              <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight uppercase italic">Topic Share</h2>
+              <p className="text-[10px] font-bold text-slate-500 dark:text-stone-400 uppercase tracking-widest mt-0.5">Category Distribution</p>
             </div>
             
-            <div className="scale-110 relative z-10">
+            <div className="w-full relative z-10 flex-grow flex items-center justify-center my-2">
               <CategoryDistPie data={data.categoryStats} />
             </div>
           </motion.div>
         </div>
+      )}
 
-        {/* Popular Polls */}
+      {/* Popular Community Polls Leaderboard */}
+      {(activeTab === 'overview' || activeTab === 'leaderboard') && (
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8 glass-card p-10 rounded-[3rem] border border-white/5 relative overflow-hidden group"
+          transition={{ delay: 0.4 }}
+          className="rounded-[2.2rem] p-6 sm:p-8 border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl shadow-xl relative group overflow-hidden"
         >
-          <div className="absolute top-0 right-0 p-8 opacity-5">
-             <BarChart3 className="w-64 h-64 text-white" />
-          </div>
-          
-          <div className="flex items-center justify-between mb-10 relative z-10">
+          <div className="flex items-center justify-between mb-4 relative z-10">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight uppercase flex items-center gap-3">
-                <BarChart3 className="h-6 w-6 text-amber-400" />
-                Dominant Pulses
+              <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic flex items-center gap-2.5">
+                <BarChart3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                Dominant Community Feeds
               </h2>
-              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1 ml-9">Top Performing Community Topics</p>
+              <p className="text-[10px] font-bold text-slate-500 dark:text-stone-400 uppercase tracking-widest mt-0.5 ml-7">Top Voted Feeds Leaderboard</p>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+              <Sparkles className="w-3 h-3" /> Top Rankings
             </div>
           </div>
+
           <PopularPollsBar data={data.popularPolls} />
         </motion.div>
-      </main>
+      )}
 
-      {/* Floating Back Action */}
-      <div className="fixed bottom-8 left-8 z-50">
-         <button 
-           onClick={() => navigate('/')}
-           className="group flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 p-2 pr-6 rounded-full hover:bg-white/10 transition-all shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
-         >
-            <div className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-black group-hover:scale-110 transition-transform">
-               <ArrowLeft className="w-5 h-5" />
-            </div>
-            <span className="text-xs font-black uppercase tracking-widest text-gray-300">Exit Console</span>
-         </button>
-      </div>
     </div>
   );
 }
+
+
+

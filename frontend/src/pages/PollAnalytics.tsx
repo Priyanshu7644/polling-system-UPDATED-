@@ -11,7 +11,6 @@ import {
   Zap
 } from 'lucide-react';
 import { analytics } from '../api';
-import Navbar from '../components/layout/Navbar';
 import { CategoryDistPie } from '../components/analytics/AnalyticsCharts';
 
 export default function PollAnalytics() {
@@ -87,70 +86,68 @@ export default function PollAnalytics() {
   const optionData = data.poll.options.map((opt: any) => ({ name: opt.text, value: opt.votes }));
 
   return (
-    <div className="min-h-screen bg-dark-bg text-gray-100 font-sans relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#f1f1f3] dark:bg-[#0c0b0a] text-slate-900 dark:text-stone-100 font-sans relative overflow-x-hidden transition-colors duration-300 pb-16">
       <div className="mesh-bg"></div>
       
       {/* Visual Accents */}
-      <div className="fixed -top-24 -left-24 w-[500px] h-[500px] bg-cyber-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="fixed top-1/2 -right-24 w-[400px] h-[400px] bg-neon-pink/10 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="fixed -top-24 -left-24 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="fixed top-1/2 -right-24 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-      <Navbar />
-
-      <main className="container mx-auto px-4 pt-28 pb-20 relative z-10">
+      <main className="container mx-auto px-4 pt-4 relative z-10">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="max-w-5xl mx-auto"
+          className="max-w-5xl mx-auto space-y-8"
         >
           {/* Header Area */}
-          <div className="text-center mb-16">
+          <div className="text-center">
             <Link 
               to={`/poll/${id}`}
-              className="inline-flex items-center gap-2 text-cyber-400 hover:text-white mb-6 transition-all font-bold text-xs uppercase tracking-[0.2em] group"
+              className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline mb-3 transition-all font-bold text-xs uppercase tracking-[0.2em] group"
             >
               <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" /> Return to Poll
             </Link>
-            <h1 className="text-5xl md:text-7xl font-black text-white leading-tight mb-4 tracking-tighter">
-              The <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyber-400 to-neon-pink">Verdict</span>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white leading-tight mb-2 tracking-tight uppercase italic">
+              Poll <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 dark:from-indigo-400 dark:via-purple-400 dark:to-cyan-400">Verdict</span>
             </h1>
-            <p className="text-gray-400 text-lg font-medium max-w-2xl mx-auto opacity-80">
+            <p className="text-slate-600 dark:text-stone-400 text-sm md:text-base font-medium max-w-2xl mx-auto">
               Results summary for "{data.poll.title}"
             </p>
           </div>
 
           {/* Unified Analytics Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             
             {/* Winner Spotlight Card */}
             <motion.div 
-               initial={{ x: -20, opacity: 0 }}
+               initial={{ x: -15, opacity: 0 }}
                animate={{ x: 0, opacity: 1 }}
                transition={{ delay: 0.2 }}
                className="lg:col-span-7"
             >
-                <div className="glass-card rounded-[3rem] p-10 md:p-12 border border-white/5 h-full relative overflow-hidden group flex flex-col justify-center">
-                    <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Trophy className="w-64 h-64 text-white" />
+                <div className="pro-card rounded-[2.2rem] p-8 md:p-10 border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/80 backdrop-blur-2xl shadow-xl h-full relative overflow-hidden group flex flex-col justify-center">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Trophy className="w-48 h-48 text-indigo-500" />
                     </div>
                     
                     <div className="relative z-10">
-                        <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest mb-6 inline-block">
+                        <span className="bg-gradient-to-r from-cyan-400 to-indigo-500 text-black text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest mb-4 inline-block shadow-md">
                             Current Leader
                         </span>
-                        <h2 className="text-4xl md:text-6xl font-black text-white mb-6 break-words">
+                        <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 break-words">
                             {topOption.text}
                         </h2>
                         <div className="flex items-end gap-3">
-                            <span className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-white/40 leading-none">
+                            <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-600 dark:from-white dark:to-white/50 leading-none">
                                 {totalVotes > 0 ? Math.round((topOption.votes / totalVotes) * 100) : 0}%
                             </span>
-                            <span className="text-gray-500 font-bold mb-2">of total consensus</span>
+                            <span className="text-slate-500 dark:text-stone-400 font-bold mb-1 text-xs uppercase tracking-wider">of total consensus</span>
                         </div>
                     </div>
 
-                    <div className="mt-10 flex gap-1.5 h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="mt-8 flex gap-1.5 h-2 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                         <div 
-                           className="h-full bg-gradient-to-r from-cyber-400 to-neon-pink rounded-full transition-all duration-1000"
+                           className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 rounded-full transition-all duration-1000"
                            style={{ width: `${totalVotes > 0 ? (topOption.votes / totalVotes) * 100 : 0}%` }}
                         ></div>
                     </div>
@@ -159,116 +156,112 @@ export default function PollAnalytics() {
 
             {/* Pulse Metrics */}
             <motion.div 
-               initial={{ x: 20, opacity: 0 }}
+               initial={{ x: 15, opacity: 0 }}
                animate={{ x: 0, opacity: 1 }}
                transition={{ delay: 0.3 }}
-               className="lg:col-span-5 flex flex-col gap-8"
+               className="lg:col-span-5 flex flex-col gap-6"
             >
                 {/* Engagement Pulse */}
-                <div className="glass-card rounded-[2.5rem] p-8 border border-white/5 flex-grow relative overflow-hidden">
-                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-neon-pink/10 blur-[50px] rounded-full"></div>
+                <div className="pro-card rounded-[2.2rem] p-6 border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/80 backdrop-blur-2xl shadow-xl flex-grow relative overflow-hidden">
+                    <h3 className="text-slate-500 dark:text-stone-400 font-black uppercase text-[10px] tracking-[0.2em] mb-6">Social Engagement</h3>
                     
-                    <h3 className="text-gray-500 font-black uppercase text-[10px] tracking-[0.2em] mb-8">Social Pulse</h3>
-                    
-                    <div className="space-y-8">
-                        <div className="flex items-center gap-6">
-                            <div className="bg-cyber-500/10 p-5 rounded-2xl">
-                                <Users className="w-8 h-8 text-cyber-400" />
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-indigo-500/10 p-4 rounded-2xl border border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                                <Users className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-3xl font-black text-white">{totalVotes}</p>
-                                <p className="text-sm text-gray-500 font-bold">Consensus Points</p>
+                                <p className="text-2xl font-black text-slate-900 dark:text-white">{totalVotes}</p>
+                                <p className="text-xs text-slate-500 dark:text-stone-400 font-bold">Total Votes Cast</p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-6">
-                            <div className="bg-neon-pink/10 p-5 rounded-2xl">
-                                <MessageSquare className="w-8 h-8 text-neon-pink" />
+                        <div className="flex items-center gap-4">
+                            <div className="bg-purple-500/10 p-4 rounded-2xl border border-purple-500/20 text-purple-600 dark:text-purple-400">
+                                <MessageSquare className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-3xl font-black text-white">{data.engagement.commentCount}</p>
-                                <p className="text-sm text-gray-500 font-bold">Discussion Threads</p>
+                                <p className="text-2xl font-black text-slate-900 dark:text-white">{data.engagement.commentCount}</p>
+                                <p className="text-xs text-slate-500 dark:text-stone-400 font-bold">Discussion Comments</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Final Split Mini Card */}
-                <div className="glass-card rounded-[2.5rem] p-8 border border-white/5 h-[300px] relative overflow-hidden flex flex-col items-center justify-center">
-                    <div className="scale-125">
-                        <CategoryDistPie data={optionData} />
-                    </div>
+                <div className="pro-card rounded-[2.2rem] p-6 border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/80 backdrop-blur-2xl shadow-xl h-[240px] relative overflow-hidden flex flex-col items-center justify-center">
+                    <CategoryDistPie data={optionData} />
                 </div>
             </motion.div>
           </div>
           
-          {/* Detailed Breakdown (Optional/Simplified) */}
+          {/* Detailed Breakdown */}
           <motion.div 
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
           >
               {sortedOptions.slice(1, 4).map((opt: any, idx: number) => (
-                  <div key={idx} className="bg-white/5 border border-white/5 p-6 rounded-3xl backdrop-blur-sm">
-                      <p className="text-[10px] font-black text-gray-500 uppercase mb-2 truncate" title={opt.text}>{opt.text}</p>
-                      <p className="text-xl font-black text-white">{opt.votes} <span className="text-[10px] text-cyber-400">votes</span></p>
+                  <div key={idx} className="pro-card p-5 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/80 shadow-md">
+                      <p className="text-[10px] font-black text-slate-500 dark:text-stone-400 uppercase mb-1.5 truncate" title={opt.text}>{opt.text}</p>
+                      <p className="text-lg font-black text-slate-900 dark:text-white">{opt.votes} <span className="text-[10px] text-indigo-600 dark:text-indigo-400">votes</span></p>
                   </div>
               ))}
-              <div className="bg-cyber-500/5 border border-cyber-500/10 p-6 rounded-3xl backdrop-blur-sm flex flex-col justify-center items-center">
-                    <BarChart3 className="w-5 h-5 text-cyber-400 mb-1" />
-                    <p className="text-[10px] font-black text-cyber-400 uppercase">View All</p>
+              <div className="bg-indigo-500/10 border border-indigo-500/20 p-5 rounded-2xl backdrop-blur-sm flex flex-col justify-center items-center">
+                    <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mb-1" />
+                    <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Consensus Metrics</p>
               </div>
           </motion.div>
 
           {/* Voter Responses (Creator Only) */}
           {isCreator && (
             <motion.div 
-              initial={{ y: 20, opacity: 0 }}
+              initial={{ y: 15, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-12 glass-card rounded-[2.5rem] p-10 border border-white/5 relative overflow-hidden"
+              className="pro-card rounded-[2.2rem] p-8 border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/80 backdrop-blur-2xl shadow-xl relative overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">Voter Responses</h3>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Detailed Consensus Breakdown</p>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tight uppercase">Voter Log</h3>
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-stone-400 uppercase tracking-widest mt-0.5">Participant Vote Verification</p>
                 </div>
-                <div className="p-3 bg-neon-blue/10 rounded-xl text-neon-blue">
-                   <Users className="w-6 h-6" />
+                <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                   <Users className="w-5 h-5" />
                 </div>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                    <thead>
-                      <tr className="border-b border-white/5 text-gray-600 text-[10px] uppercase font-black tracking-widest">
-                         <th className="pb-4 px-4 whitespace-nowrap">Participant</th>
-                         <th className="pb-4 px-4 whitespace-nowrap">Selected Choice</th>
-                         <th className="pb-4 px-4 whitespace-nowrap">Synchronization Time</th>
+                      <tr className="border-b border-slate-200 dark:border-white/5 text-slate-500 dark:text-stone-400 text-[10px] uppercase font-black tracking-widest">
+                         <th className="pb-3 px-4 whitespace-nowrap">Participant</th>
+                         <th className="pb-3 px-4 whitespace-nowrap">Selected Choice</th>
+                         <th className="pb-3 px-4 whitespace-nowrap">Time</th>
                       </tr>
                    </thead>
-                   <tbody className="divide-y divide-white/5">
+                   <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                       {votes.length > 0 ? votes.map((vote, vIdx) => {
                         const option = data.poll.options.find((o: any) => o._id === vote.optionId);
                         return (
-                          <tr key={vIdx} className="group hover:bg-white/5 transition-colors">
-                             <td className="py-4 px-4">
-                                <span className="font-bold text-gray-200">{vote.user?.username || 'Redacted'}</span>
+                          <tr key={vIdx} className="group hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors">
+                             <td className="py-3 px-4">
+                                <span className="font-bold text-slate-900 dark:text-gray-200 text-xs">{vote.user?.username || 'Anonymous'}</span>
                              </td>
-                             <td className="py-4 px-4">
-                                <span className="px-3 py-1 bg-cyber-500/10 border border-cyber-500/20 rounded-full text-[9px] font-black text-cyber-400 uppercase">
-                                   {option?.text || 'Invalid Selection'}
+                             <td className="py-3 px-4">
+                                <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase">
+                                   {option?.text || 'Selected Option'}
                                 </span>
                              </td>
-                             <td className="py-4 px-4 text-[10px] font-black text-gray-500 uppercase">
+                             <td className="py-3 px-4 text-[10px] font-bold text-slate-500 dark:text-stone-400 uppercase">
                                 {new Date(vote.createdAt).toLocaleString()}
                              </td>
                           </tr>
                         );
                       }) : (
                         <tr>
-                          <td colSpan={3} className="py-20 text-center text-gray-600 font-bold uppercase tracking-widest text-xs">No responses recorded yet.</td>
+                          <td colSpan={3} className="py-10 text-center text-slate-500 dark:text-stone-400 font-bold uppercase tracking-widest text-xs">No responses recorded yet.</td>
                         </tr>
                       )}
                    </tbody>

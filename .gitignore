@@ -1,11 +1,25 @@
+# Dependency directories
 node_modules/
+
+# Production build outputs
 dist/
 build/
+
+# Environment files and credentials
 .env
+*.env*
+project_info/
+CREDENTIALS*
+
+# Logs and runtime error dumps
 *.log
-.DS_Store
-coverage/
 .ts_errors.txt
+ts_errors.txt
+
+# TypeScript build caches
 *.tsbuildinfo
-wsgi.pyc
+
+# OS & System files
+.DS_Store
+Thumbs.db
 __pycache__/

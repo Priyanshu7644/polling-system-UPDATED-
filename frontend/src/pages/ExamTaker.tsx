@@ -164,24 +164,24 @@ const ExamTaker: React.FC = () => {
   if (loading) return (
     <div className="flex justify-center items-center min-h-[60vh]">
       <motion.div 
-        animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="text-cyber-500 font-black text-xs uppercase tracking-widest"
+        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+        transition={{ repeat: Infinity, duration: 1.5 }}
+        className="text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-widest"
       >
-        Synchronizing Exam Data...
+        Loading Exam Data...
       </motion.div>
     </div>
   );
 
   if (error) return (
-    <div className="text-center p-20 glass-card mx-auto max-w-xl rounded-[3rem] mt-20 space-y-8 animate-pulse">
-      <div className="text-red-500 font-black uppercase tracking-widest text-3xl">{error}</div>
-      <p className="text-gray-400">Access to this exam session is currently invalid or restricted by the proctoring engine.</p>
-      <button onClick={() => navigate('/exams')} className="px-10 py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all">Return to Briefing</button>
+    <div className="text-center p-12 pro-card mx-auto max-w-xl rounded-[2.5rem] mt-20 space-y-6 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 shadow-xl">
+      <div className="text-rose-600 dark:text-rose-400 font-black uppercase tracking-wider text-2xl">{error}</div>
+      <p className="text-slate-600 dark:text-slate-400 text-sm">Access to this exam session is currently invalid or restricted.</p>
+      <button onClick={() => navigate('/?tab=exams')} className="btn-primary px-8 py-3.5 rounded-2xl font-black uppercase tracking-wider text-xs shadow-md">Return to Briefing</button>
     </div>
   );
   
-  if (!exam) return <div className="text-center p-20 text-red-400 font-black uppercase">Exam unavailable.</div>;
+  if (!exam) return <div className="text-center p-20 text-rose-500 font-black uppercase">Exam unavailable.</div>;
 
   const currentQuestion = exam.questions[currentQ];
   const progress = ((currentQ + 1) / exam.questions.length) * 100;
@@ -208,15 +208,15 @@ const ExamTaker: React.FC = () => {
       )}>
         {/* Primary Camera */}
         <div className={cx(
-           "glass-card border border-neon-blue/20 flex flex-col items-center relative overflow-hidden bg-black/40 shadow-2xl transition-all duration-700",
+           "pro-card border border-indigo-500/30 flex flex-col items-center relative overflow-hidden bg-slate-900 shadow-2xl transition-all duration-700",
            !started ? "p-3 rounded-[2rem]" : "p-2 rounded-2xl"
         )}>
            <div className={cx(
-              "absolute top-2 left-3 flex items-center gap-2 z-10 bg-black/50 rounded-lg backdrop-blur-md transition-all duration-500",
+              "absolute top-2 left-3 flex items-center gap-2 z-10 bg-black/60 rounded-lg backdrop-blur-md transition-all duration-500",
               !started ? "px-2 py-1" : "px-1.5 py-0.5"
            )}>
-             <div className={cx("rounded-full bg-red-500 animate-pulse", !started ? "w-2 h-2" : "w-1.5 h-1.5")}></div>
-             <span className={cx("font-black uppercase tracking-[0.2em] text-white", !started ? "text-[9px]" : "text-[6px]")}>Primary</span>
+             <div className={cx("rounded-full bg-rose-500 animate-pulse", !started ? "w-2 h-2" : "w-1.5 h-1.5")}></div>
+             <span className={cx("font-black uppercase tracking-wider text-white", !started ? "text-[9px]" : "text-[6px]")}>Primary</span>
            </div>
            <video 
               ref={localVideoRef as any}
@@ -234,20 +234,20 @@ const ExamTaker: React.FC = () => {
         <>
             {/* Action / QR Code (Hidden when started) */}
             {!started && (
-            <div className="glass-card p-4 rounded-[2rem] border border-neon-pink/20 flex flex-col items-center justify-center relative bg-black/40 text-center pointer-events-auto">
-                <span className="text-[10px] font-black uppercase text-cyber-500 mb-2">Secondary Device</span>
-                <div className="bg-white p-2 rounded-xl">
+            <div className="pro-card p-4 rounded-[2rem] border border-indigo-200 dark:border-indigo-500/20 flex flex-col items-center justify-center relative bg-white dark:bg-slate-900 text-center pointer-events-auto shadow-md">
+                <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 mb-2">Secondary Device</span>
+                <div className="bg-white p-2 rounded-xl border border-slate-200">
                 <QRCodeSVG value={proctorQrUrl} size={64} />
                 </div>
                 {pairingCode && (
-                <div className="mt-3 py-1.5 px-4 bg-neon-pink/10 border border-neon-pink/30 rounded-xl">
-                    <span className="text-[9px] font-black uppercase text-gray-400 block mb-0.5">Pairing Code</span>
-                    <span className="text-sm font-mono font-bold text-neon-pink tracking-widest">{pairingCode}</span>
+                <div className="mt-3 py-1.5 px-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl">
+                    <span className="text-[9px] font-black uppercase text-slate-500 block mb-0.5">Pairing Code</span>
+                    <span className="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-widest">{pairingCode}</span>
                 </div>
                 )}
-                <p className="text-[8px] mt-2 text-gray-400">
+                <p className="text-[9px] mt-2 text-slate-500">
                 {window.location.hostname === 'localhost' 
-                    ? <span className="text-amber-500 font-bold">⚠️ Access via Network IP (e.g. 192.168.x.x) to scan</span> 
+                    ? <span className="text-amber-600 font-bold">⚠️ Access via Network IP (e.g. 192.168.x.x)</span> 
                     : "Scan QR or visit /connect on phone"}
                 </p>
             </div>
@@ -255,15 +255,15 @@ const ExamTaker: React.FC = () => {
 
             {/* Secondary Camera */}
             <div className={cx(
-               "glass-card border border-cyber-500/20 flex flex-col items-center relative overflow-hidden bg-black/40 shadow-2xl transition-all duration-700",
+               "pro-card border border-indigo-500/30 flex flex-col items-center relative overflow-hidden bg-slate-900 shadow-2xl transition-all duration-700",
                !started ? "p-3 rounded-[2rem]" : "p-2 rounded-2xl"
             )}>
             <div className={cx(
-               "absolute top-2 left-3 flex items-center gap-2 z-10 bg-black/50 rounded-lg backdrop-blur-md transition-all duration-500",
+               "absolute top-2 left-3 flex items-center gap-2 z-10 bg-black/60 rounded-lg backdrop-blur-md transition-all duration-500",
                !started ? "px-2 py-1" : "px-1.5 py-0.5"
             )}>
-                <div className={cx("rounded-full bg-cyber-500", !started ? "w-2 h-2" : "w-1.5 h-1.5")}></div>
-                <span className={cx("font-black uppercase tracking-[0.2em] text-white", !started ? "text-[9px]" : "text-[6px]")}>Env Cam</span>
+                <div className={cx("rounded-full bg-indigo-400", !started ? "w-2 h-2" : "w-1.5 h-1.5")}></div>
+                <span className={cx("font-black uppercase tracking-wider text-white", !started ? "text-[9px]" : "text-[6px]")}>Env Cam</span>
             </div>
             <video 
                 ref={remoteVideoRef as any}
@@ -281,12 +281,12 @@ const ExamTaker: React.FC = () => {
       )}
 
       {!started ? (
-         <div className="glass-card p-10 mt-10 rounded-[3rem] text-center border-neon-blue/30 shadow-[0_0_50px_rgba(14,165,233,0.1)] relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/10 blur-[100px]"></div>
-            <h2 className="text-4xl font-black uppercase italic tracking-tighter text-white mb-4">
+         <div className="pro-card p-10 mt-10 rounded-[3rem] text-center border border-slate-200 dark:border-indigo-500/30 bg-white dark:bg-slate-950 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px]"></div>
+            <h2 className="text-3xl sm:text-4xl font-black uppercase italic tracking-tight text-slate-900 dark:text-white mb-4">
                {exam?.proctoringLevel === 'none' ? 'Session Pre-Flight' : 'Hardware Diagnostics'}
             </h2>
-            <p className="text-gray-400 max-w-lg mx-auto mb-10">
+            <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto mb-10 text-sm leading-relaxed font-medium">
                {exam?.proctoringLevel === 'none' 
                   ? "This session does not require active camera telemetry. Initialize the assessment when ready."
                   : exam?.proctoringLevel === 'primary' 
@@ -298,24 +298,23 @@ const ExamTaker: React.FC = () => {
                onClick={() => setStarted(true)}
                disabled={!isReady}
                className={cx(
-                  "font-black text-sm uppercase tracking-[0.2em] py-5 px-12 rounded-[2rem] transition-all flex items-center justify-center mx-auto",
+                  "font-black text-sm uppercase tracking-wider py-4 px-10 rounded-2xl transition-all flex items-center justify-center mx-auto shadow-lg",
                   isReady 
-                    ? "bg-gradient-to-r from-neon-blue to-cyber-600 text-white shadow-2xl shadow-neon-blue/20 hover:scale-105 active:scale-95" 
+                    ? "btn-primary" 
                     : cameraError
-                       ? "bg-red-500/20 text-red-400 cursor-not-allowed border border-red-500/50"
-                       : "bg-white/5 text-gray-500 cursor-not-allowed border border-white/5"
+                       ? "bg-rose-50 text-rose-600 cursor-not-allowed border border-rose-300"
+                       : "bg-slate-200 dark:bg-white/5 text-slate-400 dark:text-gray-500 cursor-not-allowed border border-slate-300 dark:border-white/5"
                )}
             >
-               {isReady ? <><Zap className="w-5 h-5 inline-block mr-3" /> Initialize Assessment</> : cameraError ? <><ShieldAlert className="w-5 h-5 inline-block mr-3" /> Hardware Blocked</> : 'Awaiting Hardware Links...'}
+               {isReady ? <><Zap className="w-5 h-5 inline-block mr-2" /> Initialize Assessment</> : cameraError ? <><ShieldAlert className="w-5 h-5 inline-block mr-2" /> Hardware Blocked</> : 'Awaiting Hardware Links...'}
             </button>
             {cameraError && (
-               <div className="mt-6 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl inline-block">
-                 <p className="text-xs font-bold text-red-400 mb-2">
+               <div className="mt-6 p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-2xl inline-block text-left">
+                 <p className="text-xs font-bold text-rose-700 dark:text-rose-400 mb-1">
                    Camera Access Denied by Your Browser
                  </p>
-                 <p className="text-[10px] text-red-300">
-                   If you previously clicked "Block" or dismissed the popup, your browser will not ask again. 
-                   <br/>To fix: Click the <strong>lock icon 🔒</strong> in your address bar, change Camera to <strong>Allow</strong>, and <strong>Refresh</strong> this page.
+                 <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                   If you dismissed the popup, please click the <strong>lock icon 🔒</strong> in your address bar, set Camera to <strong>Allow</strong>, and <strong>Refresh</strong> this page.
                  </p>
                </div>
             )}
@@ -323,53 +322,47 @@ const ExamTaker: React.FC = () => {
       ) : (
          <>
             {/* Participant Header */}
-              <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-8 min-h-[120px] glass-card p-6 md:p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 min-h-[100px] pro-card p-6 md:p-8 rounded-[2rem] border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 shadow-md relative overflow-hidden">
         {tabSwitches > 0 && (
-          <div className="absolute top-0 left-0 w-full px-4 py-1.5 bg-red-500 text-white text-[8px] font-black uppercase tracking-[0.3em] z-50 text-center">
-            Proctoring Violation: {tabSwitches}/3
+          <div className="absolute top-0 left-0 w-full px-4 py-1.5 bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider z-50 text-center">
+            Proctoring Warning: {tabSwitches}/3 Tab Switches
           </div>
         )}
-        <div className="absolute top-0 left-0 w-32 h-32 bg-neon-blue/5 blur-[60px] pointer-events-none"></div>
         
-        <div className="flex flex-col md:flex-row items-center gap-6 relative z-10 text-center md:text-left">
-          <div className="p-4 bg-neon-blue/10 rounded-2xl border border-neon-blue/20">
-            <Zap className="w-8 h-8 text-neon-blue" />
+        <div className="flex flex-col md:flex-row items-center gap-4 relative z-10 text-center md:text-left">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl border border-indigo-200 dark:border-indigo-500/20">
+            <Zap className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
-            <h2 className="text-xl md:text-3xl font-black text-white tracking-tight leading-tight uppercase italic">{exam.title}</h2>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4 mt-3">
-              <div className="text-neon-blue font-black text-[9px] uppercase tracking-[0.2em]">
-                {currentQ + 1} / {exam.questions.length}
-              </div>
-              <div className="w-1 h-1 rounded-full bg-gray-700"></div>
-              <div className="text-gray-400 font-black text-[9px] uppercase tracking-[0.2em]">
-                {currentQuestion.marks} Marks
-              </div>
-              <div className="w-1 h-1 rounded-full bg-gray-700"></div>
-              <div className={cx(
-                "text-[7px] px-2.5 py-0.5 rounded-full font-black uppercase border",
-                currentQuestion.type === 'objective' ? "text-neon-blue border-neon-blue/10 bg-neon-blue/5" : "text-neon-pink border-neon-pink/10 bg-neon-pink/5"
-              )}>
+            <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight uppercase mb-1">{exam.title}</h2>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs font-bold text-slate-500">
+              <span className="text-indigo-600 dark:text-indigo-400">
+                Question {currentQ + 1} of {exam.questions.length}
+              </span>
+              <span>•</span>
+              <span>{currentQuestion.marks} Mark{currentQuestion.marks > 1 ? 's' : ''}</span>
+              <span>•</span>
+              <span className="uppercase text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
                 {currentQuestion.type}
-              </div>
+              </span>
             </div>
           </div>
         </div>
 
         <div className={cx(
-          "flex items-center gap-4 px-8 py-5 rounded-3xl font-black text-xl md:text-4xl transition-all duration-500 relative z-10",
+          "flex items-center gap-3 px-6 py-3.5 rounded-2xl font-black text-xl md:text-3xl transition-all duration-500 relative z-10 shadow-sm",
           isUrgent 
-            ? "bg-red-500/10 border border-red-500/30 text-red-500 shadow-[20px_0_60px_rgba(239,68,68,0.1)]" 
-            : "bg-white/5 border border-white/10 text-white"
+            ? "bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400" 
+            : "bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
         )}>
-          <Timer className={cx("w-6 h-6 md:w-8 md:h-8", isUrgent ? "animate-pulse" : "text-gray-500")} />
+          <Timer className={cx("w-6 h-6", isUrgent ? "animate-pulse text-rose-500" : "text-indigo-500")} />
           <span className="tabular-nums">{formatTime(timeLeft)}</span>
         </div>
         
         {/* Progress Bar Header */}
-        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-white/5">
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100 dark:bg-white/5">
            <motion.div 
-             className="h-full bg-gradient-to-r from-neon-blue via-cyber-500 to-neon-pink"
+             className="h-full bg-indigo-600"
              initial={{ width: 0 }}
              animate={{ width: `${progress}%` }}
              transition={{ type: 'spring', damping: 15 }}
@@ -383,88 +376,82 @@ const ExamTaker: React.FC = () => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
-        className="glass-card rounded-[3rem] p-8 md:p-14 min-h-[500px] flex flex-col relative overflow-hidden border border-white/10 shadow-3xl"
+        className="pro-card rounded-[2.5rem] p-8 md:p-12 min-h-[450px] flex flex-col relative overflow-hidden border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 shadow-xl"
       >
-        {/* Ambient Glows */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-neon-pink/5 blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-neon-blue/5 blur-[100px] pointer-events-none"></div>
-
         <div className="relative z-10 flex-grow">
-          <span className="text-[10px] font-black text-cyber-500 uppercase tracking-[0.3em] mb-4 block">Question Assessment</span>
-          <h3 className="text-3xl md:text-4xl font-black text-white leading-tight mb-14">{currentQuestion.text}</h3>
+          <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3 block">Question Assessment</span>
+          <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white leading-snug mb-10">{currentQuestion.text}</h3>
 
           {currentQuestion.type === 'objective' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {currentQuestion.options.map((option: string, index: number) => {
                 const isSelected = answers[currentQ]?.objectiveAnswer === index;
                 return (
                   <motion.button
                     key={index}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     onClick={() => handleOptionSelect(index)}
                     className={cx(
-                      "w-full text-left p-6 rounded-[2rem] border-2 transition-all duration-300 flex items-center justify-between group relative overflow-hidden",
+                      "w-full text-left p-5 rounded-2xl border-2 transition-all duration-200 flex items-center justify-between group relative overflow-hidden",
                       isSelected
-                        ? "border-neon-blue bg-neon-blue/10 text-white shadow-[0_0_30px_rgba(14,165,233,0.1)]"
-                        : "border-white/5 bg-white/5 hover:border-white/20 text-gray-400 hover:text-white"
+                        ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-white shadow-sm font-bold"
+                        : "border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 hover:border-indigo-300 text-slate-700 dark:text-slate-300"
                     )}
                   >
                     <div className="flex items-center gap-4 relative z-10">
                       <div className={cx(
-                        "w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border-2 transition-all duration-300",
-                        isSelected ? "bg-neon-blue border-neon-blue text-black" : "bg-dark-bg border-white/10 group-hover:border-white/20 text-gray-500"
+                        "w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs border transition-all",
+                        isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400"
                       )}>
                         {String.fromCharCode(65 + index)}
                       </div>
-                      <span className="font-bold text-lg">{option}</span>
+                      <span className="font-semibold text-base">{option}</span>
                     </div>
                     {isSelected && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="relative z-10">
-                         <CheckCircle2 className="w-6 h-6 text-neon-blue" />
+                         <CheckCircle2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                       </motion.div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-cyber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                   </motion.button>
                 );
               })}
             </div>
           ) : (
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-neon-pink to-cyber-600 rounded-[2.2rem] blur opacity-10 group-focus-within:opacity-25 transition-opacity"></div>
               <textarea
-                className="relative w-full min-h-[300px] p-8 bg-dark-bg/60 border border-white/10 rounded-[2rem] text-white text-lg font-medium placeholder-gray-700 focus:outline-none focus:ring-2 focus:ring-neon-pink/50 transition-all resize-none"
-                placeholder="Compose your detailed response here..."
+                className="w-full min-h-[250px] p-6 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-900 dark:text-white text-base font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
+                placeholder="Compose your response here..."
                 value={answers[currentQ]?.subjectiveAnswer || ''}
                 onChange={(e) => handleSubjectiveChange(e.target.value)}
               />
-              <div className="absolute bottom-6 right-8 text-[10px] font-black text-gray-600 uppercase tracking-widest mt-4">
-                Section: Subjective Analysis
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">
+                Section: Subjective Response
               </div>
             </div>
           )}
         </div>
 
         {/* Footer Navigation */}
-        <div className="mt-16 flex justify-between items-center relative z-10">
+        <div className="mt-12 flex justify-between items-center relative z-10 pt-6 border-t border-slate-200 dark:border-white/10">
           <button
             onClick={() => setCurrentQ(prev => Math.max(0, prev - 1))}
             disabled={currentQ === 0}
-            className="flex items-center gap-3 px-8 py-4 bg-white/5 dark:bg-dark-bg/50 text-gray-400 hover:text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-95 group border border-white/5"
+            className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-30 active:scale-95 border border-slate-200 dark:border-white/5"
           >
-            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Previous
+            <ChevronLeft className="w-4 h-4" /> Previous
           </button>
 
           <div className="hidden sm:flex gap-2">
              {answers.map((ans, idx) => {
-                const isSelected = ans.type === 'objective' ? ans.objectiveAnswer !== undefined : ans.subjectiveAnswer?.length > 0;
+                const isAnswered = ans.objectiveAnswer !== undefined || (ans.subjectiveAnswer && ans.subjectiveAnswer.trim().length > 0);
                 return (
                   <div 
                     key={idx} 
                     className={cx(
-                      "w-2 h-2 rounded-full transition-all duration-300",
-                      idx === currentQ ? "bg-neon-blue scale-125 shadow-[0_0_10px_#0ea5e9]" : 
-                      isSelected ? "bg-cyber-900 border border-cyber-500/50" : "bg-white/10"
+                      "w-2.5 h-2.5 rounded-full transition-all duration-300",
+                      idx === currentQ ? "bg-indigo-600 scale-125" : 
+                      isAnswered ? "bg-indigo-400" : "bg-slate-300 dark:bg-white/20"
                     )}
                   />
                 );
@@ -476,20 +463,18 @@ const ExamTaker: React.FC = () => {
               onClick={handleSubmit}
               disabled={submitting}
               className={cx(
-                "px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] transition-all group flex items-center gap-3 shadow-2xl",
-                submitting 
-                  ? "bg-gray-800 text-gray-600" 
-                  : "bg-gradient-to-r from-neon-pink to-cyber-600 text-white hover:scale-105 active:scale-95 shadow-neon-pink/20"
+                "btn-primary px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-md",
+                submitting ? "opacity-50 cursor-not-allowed" : ""
               )}
             >
-              {submitting ? 'Transmitting...' : <><Send className="w-4 h-4" /> Finalize Exam</>}
+              {submitting ? 'Submitting...' : <><Send className="w-4 h-4" /> Finalize Exam</>}
             </button>
           ) : (
             <button
               onClick={() => setCurrentQ(prev => Math.min(exam.questions.length - 1, prev + 1))}
-              className="flex items-center gap-3 px-10 py-4 bg-neon-blue hover:bg-cyber-500 text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 group shadow-xl shadow-neon-blue/20"
+              className="btn-primary flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md"
             >
-              Next Section <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              Next <ChevronRight className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -502,9 +487,9 @@ const ExamTaker: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="mt-8 flex items-center gap-3 text-amber-500 bg-amber-500/10 border border-amber-500/20 p-5 rounded-[2rem] font-black text-xs uppercase tracking-widest justify-center backdrop-blur-md"
+            className="mt-6 flex items-center gap-2 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-4 rounded-2xl font-bold text-xs uppercase tracking-wider justify-center"
           >
-            <AlertCircle className="w-4 h-4" /> You still have unanswered inquiries. Recheck before finalizing.
+            <AlertCircle className="w-4 h-4" /> You still have unanswered questions. Recheck before finalizing.
           </motion.div>
         )}
       </AnimatePresence>
